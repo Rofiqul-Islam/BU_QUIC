@@ -253,7 +253,7 @@ public class Util {
         Set<QuicFrame> temp = new HashSet<>();
         QuicFrame.setPayloadPostionIndicator(0);
         while(QuicFrame.getPayloadPostionIndicator()<payload.length){
-            System.out.println("paylodad indicatior = "+QuicFrame.getPayloadPostionIndicator());
+            System.out.println("paylodad indicatior = "+QuicFrame.getPayloadPostionIndicator()+" Payload length = "+payload.length);
             temp.add(QuicFrame.decode(payload));
         }
         return temp;
@@ -399,7 +399,7 @@ public class Util {
             return shortHeaderPacket;
 
         }catch (Exception e){
-            throw new QuicException(100,0,"longheader decoder error");
+            throw new QuicException(10,0,"Short Header packet decoder error");
         }
     }
     //////////////////////////

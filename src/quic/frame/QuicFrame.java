@@ -67,6 +67,11 @@ public abstract class QuicFrame {
         else if(headerByte == 28 || headerByte == 29){
             return quicConnectionCloseFrameDecoder(arr);
         }
+        else if(headerByte == 0){
+            System.out.println("Padding frame");
+            payloadPostionIndicator=arr.length;
+            return new QuicPaddingFrame();
+        }
         else{
             throw new QuicException(7,0,"Unknown headerByte of frame");
         }
