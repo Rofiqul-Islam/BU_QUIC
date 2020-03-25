@@ -1,0 +1,14 @@
+# IntelliJ Files
+.idea/
+*.iml
+
+# Java output files
+out/
+
+# Library files
+lib/
+
+# Eclipse files
+bin/
+.classpath
+.project
