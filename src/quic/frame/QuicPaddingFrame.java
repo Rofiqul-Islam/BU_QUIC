@@ -1,10 +1,13 @@
 package quic.frame;
 
-
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+
+/**
+ * Quic Padding frame
+ * @author Md Rofiqul Islam
+ */
 public class QuicPaddingFrame extends QuicFrame {
 
     private int length;
@@ -21,7 +24,6 @@ public class QuicPaddingFrame extends QuicFrame {
      * Strictly speaking, a padding frame consists of one single byte. For convenience, here all subsequent padding
      * bytes are collected in one padding object.
      * @param buffer
-     * @param log
      * @return
      */
     public QuicPaddingFrame parse(ByteBuffer buffer) {

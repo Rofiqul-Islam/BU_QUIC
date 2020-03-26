@@ -7,6 +7,8 @@ import quic.exception.QuicException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -18,43 +20,51 @@ import static org.junit.jupiter.api.DynamicTest.dynamicTest;
  * @author Denton Wood
  */
 public class QuicConnectionCloseFrameTest {
+    public static final Charset CHARSET = StandardCharsets.UTF_8;
 
-    // QUIC error codes range from 0x0 to 0x1FF (8191), not including 0xC, 0xE, and 0xF
-    Stream<Integer> getValidErrorCodes() {
-        return Stream.of(0, 1, 11, 13, 16, 234, 8191);
+    // Error codes range from 0x0 to 0x1FF (8191) except 0xC, 0xE, and 0xF
+    Stream<Long> getValidErrorCodes() {
+        return Stream.of(0L, 1L, 11L, 13L, 16L, 234L, 8191L);
     }
 
-    Stream<Integer> getInvalidQuicErrorCodes() {
-        return Stream.of(-1, 12, 14, 15, 8192, Integer.MIN_VALUE, Integer.MAX_VALUE);
+    Stream<Long> getInvalidQuicErrorCodes() {
+        return Stream.of(-1L, 12L, 14L, 15L, 8192L, Long.MIN_VALUE,
+                Long.MAX_VALUE);
     }
 
     // The valid QUIC frame types range from 0x0 to 0x1E (30)
-    Stream<Integer> getValidFrameTypes() {
-        return Stream.of(0, 1, 3, 23, 30);
+    Stream<Long> getValidFrameTypes() {
+        return Stream.of(0L, 1L, 3L, 23L, 30L);
     }
 
-    Stream<Integer> getInvalidFrameTypes() {
-        return Stream.of(-1, 31, 234634, Integer.MIN_VALUE, Integer.MAX_VALUE);
+    Stream<Long> getInvalidFrameTypes() {
+        return Stream.of(-1L, 31L, 234634L, Long.MIN_VALUE, Long.MAX_VALUE);
     }
 
     Stream<String> getValidPhrases() {
-        return Stream.of("", "e", "error", "this is an error message", "$pec!@l čh@rĀct#rs");
+        return Stream.of("", "e", "error", "this is an error message",
+                "$pec!@l čh@rĀct#rs");
     }
 
     @Nested
     public class ConstructorTest {
         @TestFactory
         public Stream<DynamicTest> testValidErrors() {
-            return getValidErrorCodes().flatMap(errorCode -> getValidFrameTypes()
-                    .flatMap(frameType -> getValidPhrases().map(phrase ->
-                            dynamicTest("error code: " + errorCode + ", frame type = " +
-                                    frameType + ", phrase = " + phrase, () -> {
-                                QuicConnectionCloseFrame frame =
-                                        new QuicConnectionCloseFrame(errorCode, frameType, phrase);
-                                assertEquals(errorCode.longValue(), frame.getErrorCode());
-                                assertEquals(frameType.longValue(), frame.getFrameType());
-                                assertEquals(phrase, frame.getReasonPhrase());
-                            }))));
+            return getValidErrorCodes().flatMap(errorCode
+                    -> getValidFrameTypes().flatMap(frameType
+                    -> getValidPhrases().map(phrase ->
+                    dynamicTest("error code: " + errorCode
+                            + ", frame type = " + frameType
+                            + ", phrase = " + phrase, () -> {
+                        QuicConnectionCloseFrame frame =
+                                new QuicConnectionCloseFrame(errorCode,
+                                        frameType, phrase);
+                        assertEquals(errorCode.longValue(),
+                                frame.getErrorCode());
+                        assertEquals(frameType.longValue(),
+                                frame.getFrameType());
+                        assertEquals(phrase, frame.getReasonPhrase());
+                    }))));
         }
 
         @TestFactory
@@ -62,7 +72,9 @@ public class QuicConnectionCloseFrameTest {
             return getInvalidQuicErrorCodes().map(errorCode ->
                     dynamicTest("error code: " + errorCode, () -> {
                         assertThrows(IllegalArgumentException.class, () -> {
-                            QuicConnectionCloseFrame frame = new QuicConnectionCloseFrame(errorCode, 0, "message");
+                            QuicConnectionCloseFrame frame =
+                                    new QuicConnectionCloseFrame(errorCode,
+                                            0, "message");
                         });
                     }));
         }
@@ -72,7 +84,9 @@ public class QuicConnectionCloseFrameTest {
             return getInvalidFrameTypes().map(frameType ->
                     dynamicTest("frame type: " + frameType, () -> {
                         assertThrows(IllegalArgumentException.class, () -> {
-                            QuicConnectionCloseFrame frame = new QuicConnectionCloseFrame(0, frameType, "message");
+                            QuicConnectionCloseFrame frame =
+                                    new QuicConnectionCloseFrame(0,
+                                            frameType, "message");
                         });
                     }));
         }
@@ -89,16 +103,18 @@ public class QuicConnectionCloseFrameTest {
 
         @TestFactory
         public Stream<DynamicTest> testValidQuicErrorCodes() {
-            return getValidErrorCodes().map(errorCode -> dynamicTest("error code: " + errorCode,
-                    () -> {
+            return getValidErrorCodes().map(errorCode -> dynamicTest(
+                    "error code: " + errorCode, () -> {
                         this.frame.setErrorCode(errorCode);
-                        assertEquals(errorCode.longValue(), this.frame.getErrorCode());
+                        assertEquals(errorCode.longValue(),
+                                this.frame.getErrorCode());
                     }));
         }
 
         @TestFactory
         public Stream<DynamicTest> testInvalidQuicErrorCodes() {
-            return getInvalidQuicErrorCodes().map(errorCode -> dynamicTest("error code: " + errorCode,
+            return getInvalidQuicErrorCodes().map(errorCode
+                    -> dynamicTest("error code: " + errorCode,
                     () -> {
                         assertThrows(IllegalArgumentException.class, () -> {
                             this.frame.setErrorCode(errorCode);
@@ -108,16 +124,19 @@ public class QuicConnectionCloseFrameTest {
 
         @TestFactory
         public Stream<DynamicTest> testValidFrameTypes() {
-            return getValidFrameTypes().map(frameType -> dynamicTest("frame type: " + frameType,
+            return getValidFrameTypes().map(frameType
+                    -> dynamicTest("frame type: " + frameType,
                     () -> {
                         this.frame.setFrameType(frameType);
-                        assertEquals(frameType.longValue(), this.frame.getFrameType());
+                        assertEquals(frameType.longValue(),
+                                this.frame.getFrameType());
                     }));
         }
 
         @TestFactory
         public Stream<DynamicTest> testInvalidFrameTypes() {
-            return getInvalidFrameTypes().map(frameType -> dynamicTest("frame type: " + frameType,
+            return getInvalidFrameTypes().map(frameType
+                    -> dynamicTest("frame type: " + frameType,
                     () -> {
                         assertThrows(IllegalArgumentException.class, () -> {
                             this.frame.setFrameType(frameType);
@@ -127,7 +146,8 @@ public class QuicConnectionCloseFrameTest {
 
         @TestFactory
         public Stream<DynamicTest> testValidPhrases() {
-            return getValidPhrases().map(phrase -> dynamicTest("phrase: " + phrase,
+            return getValidPhrases().map(phrase
+                    -> dynamicTest("phrase: " + phrase,
                     () -> {
                         this.frame.setReasonPhrase(phrase);
                         assertEquals(phrase, this.frame.getReasonPhrase());
@@ -140,9 +160,10 @@ public class QuicConnectionCloseFrameTest {
         @Test
         public void testOneByteFrame() throws IOException {
             int errorCode = 23;
-            int frameCode = 34;
+            int frameCode = 22;
             String reason = "reason";
-            QuicConnectionCloseFrame frame = new QuicConnectionCloseFrame(errorCode, frameCode, reason);
+            QuicConnectionCloseFrame frame =
+                    new QuicConnectionCloseFrame(errorCode, frameCode, reason);
 
             byte[] bytes = new byte[4];
             bytes[0] = (byte) QuicConnectionCloseFrame.FRAME_TYPE;
@@ -153,29 +174,31 @@ public class QuicConnectionCloseFrameTest {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             out.write(bytes);
             out.write(reason.getBytes());
-            assertEquals(frame.encode(), out.toByteArray());
+            assertArrayEquals(frame.encode(), out.toByteArray());
         }
 
         @Test
         public void testMultipleByteFrame() throws IOException {
             int errorCode = 8191;
             int frameCode = 30;
-            String reason = "This is a really long reason for tÉsting purposes. Look at how long it is!";
-            QuicConnectionCloseFrame frame = new QuicConnectionCloseFrame(errorCode, frameCode, reason);
+            String reason = "This is a long reason for tÉsting purposes, "
+                    + "but not too long";
+            QuicConnectionCloseFrame frame =
+                    new QuicConnectionCloseFrame(errorCode, frameCode, reason);
 
             byte[] bytes = new byte[5];
             bytes[0] = (byte) QuicConnectionCloseFrame.FRAME_TYPE;
-            bytes[1] = (byte) errorCode;
-            errorCode = Integer.rotateLeft(errorCode, 8);
+            bytes[2] = (byte) errorCode;
             // Set the first bit
-            bytes[2] = (byte) (errorCode + 128);
+            bytes[1] = (byte) ((errorCode >> Byte.SIZE) + 64);
             bytes[3] = (byte) frameCode;
             bytes[4] = (byte) reason.length();
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             out.write(bytes);
-            out.write(reason.getBytes());
-            assertEquals(out.toByteArray(), frame.encode());
+            out.write(reason.getBytes(CHARSET));
+            byte[] actualBytes = frame.encode();
+            assertArrayEquals(out.toByteArray(), frame.encode());
         }
     }
 
@@ -183,8 +206,8 @@ public class QuicConnectionCloseFrameTest {
     public class DecodeTest {
         @Test
         public void testOneByteFrame() throws IOException, QuicException {
-            int errorCode = 5;
-            int frameCode = 33;
+            long errorCode = 5;
+            long frameCode = 11;
             String reason = "reason";
 
             byte[] bytes = new byte[4];
@@ -200,7 +223,8 @@ public class QuicConnectionCloseFrameTest {
             QuicFrame frame = QuicFrame.decode(out.toByteArray());
             assertTrue(frame instanceof QuicConnectionCloseFrame);
 
-            QuicConnectionCloseFrame connectionCloseFrame = (QuicConnectionCloseFrame) frame;
+            QuicConnectionCloseFrame connectionCloseFrame =
+                    (QuicConnectionCloseFrame) frame;
             assertEquals(errorCode, connectionCloseFrame.getErrorCode());
             assertEquals(frameCode, connectionCloseFrame.getFrameType());
             assertEquals(reason, connectionCloseFrame.getReasonPhrase());
@@ -208,16 +232,16 @@ public class QuicConnectionCloseFrameTest {
 
         @Test
         public void testMultipleByteFrame() throws IOException, QuicException {
-            int errorCode = 2345;
-            int frameCode = 28;
-            String reason = "This is my reason and I will shout it, because it is my reason.";
+            long errorCode = 2345;
+            long frameCode = 28;
+            String reason = "This is my reason and I will shout it, "
+                    + "because it is good.";
 
             byte[] bytes = new byte[5];
             bytes[0] = (byte) QuicConnectionCloseFrame.FRAME_TYPE;
-            bytes[1] = (byte) errorCode;
-            errorCode = Integer.rotateLeft(errorCode, 8);
-            // Set the first bit
-            bytes[2] = (byte) (errorCode + 128);
+            bytes[2] = (byte) errorCode;
+            // Set the second bit
+            bytes[1] = (byte) ((errorCode >> Byte.SIZE) + 64);
             bytes[3] = (byte) frameCode;
             bytes[4] = (byte) reason.length();
 
@@ -228,7 +252,8 @@ public class QuicConnectionCloseFrameTest {
             QuicFrame frame = QuicFrame.decode(out.toByteArray());
             assertTrue(frame instanceof QuicConnectionCloseFrame);
 
-            QuicConnectionCloseFrame connectionCloseFrame = (QuicConnectionCloseFrame) frame;
+            QuicConnectionCloseFrame connectionCloseFrame =
+                    (QuicConnectionCloseFrame) frame;
             assertEquals(errorCode, connectionCloseFrame.getErrorCode());
             assertEquals(frameCode, connectionCloseFrame.getFrameType());
             assertEquals(reason, connectionCloseFrame.getReasonPhrase());
@@ -236,8 +261,8 @@ public class QuicConnectionCloseFrameTest {
 
         @Test
         public void testNullLengthString() throws IOException, QuicException {
-            int errorCode = 11;
-            int frameCode = 4;
+            long errorCode = 11;
+            long frameCode = 4;
             String reason = "";
 
             byte[] bytes = new byte[4];
@@ -253,16 +278,17 @@ public class QuicConnectionCloseFrameTest {
             QuicFrame frame = QuicFrame.decode(out.toByteArray());
             assertTrue(frame instanceof QuicConnectionCloseFrame);
 
-            QuicConnectionCloseFrame connectionCloseFrame = (QuicConnectionCloseFrame) frame;
+            QuicConnectionCloseFrame connectionCloseFrame =
+                    (QuicConnectionCloseFrame) frame;
             assertEquals(errorCode, connectionCloseFrame.getErrorCode());
             assertEquals(frameCode, connectionCloseFrame.getFrameType());
             assertEquals(reason, connectionCloseFrame.getReasonPhrase());
         }
 
         @ParameterizedTest
-        @ValueSource(ints = {-1, 12, 14})
-        public void testInvalidErrorCode(int errorCode) throws IOException {
-            int frameCode = 24;
+        @ValueSource(longs = {-1, 12, 14, 15})
+        public void testInvalidErrorCode(long errorCode) throws IOException {
+            long frameCode = 24;
             String reason = "Another reason";
 
             byte[] bytes = new byte[4];
@@ -275,13 +301,14 @@ public class QuicConnectionCloseFrameTest {
             out.write(bytes);
             out.write(reason.getBytes());
 
-            assertThrows(QuicException.class, () -> QuicFrame.decode(out.toByteArray()));
+            assertThrows(QuicException.class,
+                    () -> QuicFrame.decode(out.toByteArray()));
         }
 
         @ParameterizedTest
-        @ValueSource(ints = {-1, 31, 62})
-        public void testInvalidFrameCode(int frameCode) throws IOException {
-            int errorCode = 3;
+        @ValueSource(longs = {-1, 31, 62})
+        public void testInvalidFrameCode(long frameCode) throws IOException {
+            long errorCode = 3;
             String reason = "Yet another reason";
 
             byte[] bytes = new byte[4];
@@ -294,7 +321,8 @@ public class QuicConnectionCloseFrameTest {
             out.write(bytes);
             out.write(reason.getBytes());
 
-            assertThrows(QuicException.class, () -> QuicFrame.decode(out.toByteArray()));
+            assertThrows(QuicException.class,
+                    () -> QuicFrame.decode(out.toByteArray()));
         }
     }
 
@@ -303,9 +331,14 @@ public class QuicConnectionCloseFrameTest {
         return getValidErrorCodes()
                 .flatMap(errorCode -> getValidFrameTypes().flatMap(frameType ->
                         getValidPhrases().map(phrase -> dynamicTest("code: "
-                                + errorCode + ", frame type: " + frameType + ", phrase: " + phrase, () -> {
-                            QuicConnectionCloseFrame frame1 = new QuicConnectionCloseFrame(errorCode, frameType, phrase);
-                            QuicConnectionCloseFrame frame2 = new QuicConnectionCloseFrame(errorCode, frameType, phrase);
+                                + errorCode + ", frame type: " + frameType
+                                + ", phrase: " + phrase, () -> {
+                            QuicConnectionCloseFrame frame1 =
+                                    new QuicConnectionCloseFrame(errorCode,
+                                            frameType, phrase);
+                            QuicConnectionCloseFrame frame2 =
+                                    new QuicConnectionCloseFrame(errorCode,
+                                            frameType, phrase);
                             assertEquals(frame1, frame2);
                             assertEquals(frame1.hashCode(), frame2.hashCode());
                         }))));
@@ -315,10 +348,17 @@ public class QuicConnectionCloseFrameTest {
     public Stream<DynamicTest> testToString() {
         return getValidErrorCodes()
                 .flatMap(errorCode -> getValidFrameTypes().flatMap(frameType ->
-                        getValidPhrases().map(phrase -> dynamicTest("code: "
-                                + errorCode + ", frame type: " + frameType + ", phrase: " + phrase, () -> {
-                            QuicConnectionCloseFrame frame = new QuicConnectionCloseFrame(errorCode, frameType, phrase);
-                            assertEquals("QuicConnectionCloseFrame{errorCode=" + errorCode + ", frameType=" + frameType + ", reasonPhrase='" + phrase + "'}", frame.toString());
+                        getValidPhrases().map(phrase
+                                -> dynamicTest("code: " + errorCode
+                                + ", frame type: " + frameType + ", phrase: "
+                                + phrase, () -> {
+                            QuicConnectionCloseFrame frame =
+                                    new QuicConnectionCloseFrame(errorCode,
+                                            frameType, phrase);
+                            assertEquals("QuicConnectionCloseFrame"
+                                    + "{errorCode=" + errorCode + ", frameType="
+                                    + frameType + ", reasonPhrase='" + phrase
+                                    + "'}", frame.toString());
                         }))));
     }
 }

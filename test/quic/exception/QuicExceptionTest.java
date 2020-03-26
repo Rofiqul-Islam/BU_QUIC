@@ -26,23 +26,28 @@ public class QuicExceptionTest {
     }
 
     Stream<String> getValidMessages() {
-        return Stream.of("", "e", "error", "this is an error message", "$pec!@l čh@rĀct#rs");
+        return Stream.of("", "e", "error", "this is an error message",
+                "$pec!@l čh@rĀct#rs");
     }
 
     @Nested
     public class ConstructorTest {
         @TestFactory
         public Stream<DynamicTest> testValidQuicErrors() {
-            return getValidErrorCodes().flatMap(errorCode -> getValidFrameTypes()
-                    .flatMap(frameType -> getValidMessages().map(message ->
-                            dynamicTest("error code: " + errorCode + ", frame type = " +
-                                    frameType + ", message = " + message, () -> {
-                                QuicException frame =
-                                        new QuicException(errorCode, frameType, message);
-                                assertEquals(errorCode.longValue(), frame.getErrorCode());
-                                assertEquals(frameType.longValue(), frame.getFrameType());
-                                assertEquals(message, frame.getMessage());
-                            }))));
+            return getValidErrorCodes().flatMap(errorCode
+                    -> getValidFrameTypes().flatMap(frameType
+                    -> getValidMessages().map(message
+                    -> dynamicTest("error code: " + errorCode
+                            + ", frame type = " + frameType + ", message = " + message,
+                    () -> {
+                        QuicException frame = new QuicException(errorCode,
+                                frameType, message);
+                        assertEquals(errorCode.longValue(),
+                                frame.getErrorCode());
+                        assertEquals(frameType.longValue(),
+                                frame.getFrameType());
+                        assertEquals(message, frame.getMessage());
+                    }))));
         }
 
         @TestFactory
@@ -50,7 +55,8 @@ public class QuicExceptionTest {
             return getInvalidErrorCodes().map(errorCode ->
                     dynamicTest("error code: " + errorCode, () -> {
                         assertThrows(IllegalArgumentException.class, () -> {
-                            QuicException frame = new QuicException(errorCode, 0, "message");
+                            QuicException frame = new QuicException(errorCode,
+                                    0, "message");
                         });
                     }));
         }
@@ -60,7 +66,8 @@ public class QuicExceptionTest {
             return getInvalidFrameTypes().map(frameType ->
                     dynamicTest("frame type: " + frameType, () -> {
                         assertThrows(IllegalArgumentException.class, () -> {
-                            QuicException frame = new QuicException(0, frameType, "message");
+                            QuicException frame = new QuicException(0,
+                                    frameType, "message");
                         });
                     }));
         }
@@ -84,16 +91,19 @@ public class QuicExceptionTest {
 
         @TestFactory
         public Stream<DynamicTest> testValidQuicErrorCodes() {
-            return getValidErrorCodes().map(errorCode -> dynamicTest("error code: " + errorCode,
+            return getValidErrorCodes().map(errorCode
+                    -> dynamicTest("error code: " + errorCode,
                     () -> {
                         this.frame.setErrorCode(errorCode);
-                        assertEquals(errorCode.longValue(), this.frame.getErrorCode());
+                        assertEquals(errorCode.longValue(),
+                                this.frame.getErrorCode());
                     }));
         }
 
         @TestFactory
         public Stream<DynamicTest> testInvalidQuicErrorCodes() {
-            return getInvalidErrorCodes().map(errorCode -> dynamicTest("error code: " + errorCode,
+            return getInvalidErrorCodes().map(errorCode
+                    -> dynamicTest("error code: " + errorCode,
                     () -> {
                         assertThrows(IllegalArgumentException.class, () -> {
                             this.frame.setErrorCode(errorCode);
@@ -103,7 +113,8 @@ public class QuicExceptionTest {
 
         @TestFactory
         public Stream<DynamicTest> testValidFrameTypes() {
-            return getValidFrameTypes().map(frameType -> dynamicTest("frame type: " + frameType,
+            return getValidFrameTypes().map(frameType
+                    -> dynamicTest("frame type: " + frameType,
                     () -> {
                         this.frame.setFrameType(frameType);
                         assertEquals(frameType.longValue(), this.frame.getFrameType());
@@ -112,7 +123,8 @@ public class QuicExceptionTest {
 
         @TestFactory
         public Stream<DynamicTest> testInvalidFrameTypes() {
-            return getInvalidFrameTypes().map(frameType -> dynamicTest("frame type: " + frameType,
+            return getInvalidFrameTypes().map(frameType
+                    -> dynamicTest("frame type: " + frameType,
                     () -> {
                         assertThrows(IllegalArgumentException.class, () -> {
                             this.frame.setFrameType(frameType);
@@ -122,7 +134,8 @@ public class QuicExceptionTest {
 
         @TestFactory
         public Stream<DynamicTest> testValidMessages() {
-            return getValidMessages().map(message -> dynamicTest("message: " + message,
+            return getValidMessages().map(message
+                    -> dynamicTest("message: " + message,
                     () -> {
                         this.frame.setMessage(message);
                         assertEquals(message, this.frame.getMessage());
@@ -139,11 +152,16 @@ public class QuicExceptionTest {
 
     @TestFactory
     public Stream<DynamicTest> testEqualsAndHashcode() {
-        return getValidErrorCodes().flatMap(errorCode -> getValidFrameTypes().flatMap(frameType ->
-                getValidMessages().map(message -> dynamicTest("code: "
-                        + errorCode + ", frame type: " + frameType + ", message: " + message, () -> {
-                    QuicException frame1 = new QuicException(errorCode, frameType, message);
-                    QuicException frame2 = new QuicException(errorCode, frameType, message);
+        return getValidErrorCodes().flatMap(errorCode
+                -> getValidFrameTypes().flatMap(frameType
+                -> getValidMessages().map(message
+                -> dynamicTest("code: " + errorCode
+                        + ", frame type: " + frameType + ", message: " + message,
+                () -> {
+                    QuicException frame1 = new QuicException(errorCode,
+                            frameType, message);
+                    QuicException frame2 = new QuicException(errorCode,
+                            frameType, message);
                     assertEquals(frame1, frame2);
                     assertEquals(frame1.hashCode(), frame2.hashCode());
                 }))));
@@ -153,10 +171,16 @@ public class QuicExceptionTest {
     public Stream<DynamicTest> testToString() {
         return getValidErrorCodes()
                 .flatMap(errorCode -> getValidFrameTypes().flatMap(frameType ->
-                        getValidMessages().map(message -> dynamicTest("code: "
-                                + errorCode + ", frame type: " + frameType + ", message: " + message, () -> {
-                            QuicException frame = new QuicException(errorCode, frameType, message);
-                            assertEquals("QuicException [errorCode: " + errorCode + ", frameType: " + frameType + ", message: '" + message + "']", frame.toString());
+                        getValidMessages().map(message
+                                -> dynamicTest("code: " + errorCode
+                                + ", frame type: " + frameType + ", message: "
+                                + message, () -> {
+                            QuicException frame = new QuicException(errorCode,
+                                    frameType, message);
+                            assertEquals("QuicException [errorCode: "
+                                            + errorCode + ", frameType: " + frameType
+                                            + ", message: '" + message + "']",
+                                    frame.toString());
                         }))));
     }
 }

@@ -8,6 +8,9 @@ import java.net.InetAddress;
 
 import static quic.main.Client.ds;
 
+/**
+ * @author Md Rofiqul Islam
+ */
 public class Sender implements Runnable {
     private InetAddress ip;
     private int port;

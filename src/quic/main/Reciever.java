@@ -9,6 +9,9 @@ import java.net.DatagramPacket;
 
 import static quic.main.Client.ds;
 
+/**
+ * @author Md Rofiqul Islam
+ */
 public class Reciever implements Runnable {
 
     public Reciever() {

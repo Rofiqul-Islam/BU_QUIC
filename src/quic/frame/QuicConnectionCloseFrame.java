@@ -6,12 +6,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.UnsupportedEncodingException;
+import java.util.Objects;
 
 /**
  * Represents a QUIC CONNECTION_CLOSE frame. This frame is sent when a
  * connection error is detected.
  *
  * @version 1.0
+ * @author Md Rofiqul Islam
  */
 public class QuicConnectionCloseFrame extends QuicFrame {
     /** Quic CONNECTION_CLOSE frames have a type of 0x1c */
@@ -50,7 +52,12 @@ public class QuicConnectionCloseFrame extends QuicFrame {
      * @param errorCode the error code
      */
     public void setErrorCode(long errorCode) {
-        this.errorCode = errorCode;
+        if(errorCode>=0 && errorCode<= 8191 && errorCode !=12 && errorCode != 14 && errorCode!=15) {
+            this.errorCode = errorCode;
+        }
+        else {
+            throw new IllegalArgumentException();
+        }
     }
 
     /**
@@ -66,7 +73,11 @@ public class QuicConnectionCloseFrame extends QuicFrame {
      * @param frameType the frame type
      */
     public void setFrameType(long frameType) {
-        this.frameType = frameType;
+        if(frameType>=0 && frameType<=30) {
+            this.frameType = frameType;
+        }else {
+            throw new IllegalArgumentException();
+        }
     }
 
     /**
@@ -93,22 +104,39 @@ public class QuicConnectionCloseFrame extends QuicFrame {
     @Override
     public byte[] encode() throws IOException {
         ByteArrayOutputStream encoding = new ByteArrayOutputStream();
-
-        try {
-            encoding.write(FRAME_TYPE);
-            encoding.write(Util.generateVariableLengthInteger(this.getErrorCode()));
-            encoding.write(Util.generateVariableLengthInteger(this.getFrameType()));
-            encoding.write(Util.generateVariableLengthInteger((long)(this.getReasonPhrase().length())));
-            encoding.write(this.getReasonPhrase().getBytes());
-
-
-        } catch (IOException e) {
-
-            e.printStackTrace();
-        }
+        encoding.write(FRAME_TYPE);        // appending header byte
+        encoding.write(Util.generateVariableLengthInteger(this.getErrorCode()));      // appending Error code as a variable length integer
+        encoding.write(Util.generateVariableLengthInteger(this.getFrameType()));      // appending Frame type as a variable length integer
+        encoding.write(Util.generateVariableLengthInteger((long)(this.getReasonPhrase().length())));  // appending Reason Phrase length as a variable length integer
+        encoding.write(this.getReasonPhrase().getBytes());   // Appending reason phrase
 
         byte [] data = encoding.toByteArray();
 
         return data;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof QuicConnectionCloseFrame)) return false;
+        QuicConnectionCloseFrame that = (QuicConnectionCloseFrame) o;
+        return getErrorCode() == that.getErrorCode() &&
+                getFrameType() == that.getFrameType() &&
+                getReasonPhrase().equals(that.getReasonPhrase());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getErrorCode(), getFrameType(), getReasonPhrase());
+    }
+
+    @Override
+    public String toString() {
+        return "QuicConnectionCloseFrame{" +
+                "errorCode=" + this.getErrorCode() +
+                ", frameType=" +this.getFrameType() +
+                ", reasonPhrase='" + this.reasonPhrase + '\'' +
+                '}';
+    }
+
 }

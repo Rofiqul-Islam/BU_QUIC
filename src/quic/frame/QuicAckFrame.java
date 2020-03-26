@@ -1,21 +1,23 @@
 package quic.frame;
 
+
 import quic.exception.QuicException;
 import quic.util.Util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Represents a QUIC ACK frame.
  * A QUIC ACK frame to inform senders of packets they have received and processed.
  *
- * @version 1.1
+ * @version 1.2
+ * @author Md Rofiqul Islam
  */
 public class QuicAckFrame extends QuicFrame implements Serializable {
     /**
@@ -39,9 +41,15 @@ public class QuicAckFrame extends QuicFrame implements Serializable {
     private long firstAckRange;
 
     /**
-     * Additional ranges of packets which are alternately gap and ack range
+     * Represent contiguous unacknowledged packets preceding the packet number one lower than
+     * the smallest in the preceding ACK range
      */
-    private ArrayList<QuicAckRange> ackRanges;
+    private List<Long> gaps;
+
+    /**
+     * Represent additional ranges of ACKed packets
+     */
+    private List<Long> acks;
 
     /**
      * Value constructor for the frame.QuicACKFrame class. Specifies the largestAck, delay, rangeCount
@@ -53,43 +61,18 @@ public class QuicAckFrame extends QuicFrame implements Serializable {
      * @param firstAckRange Indicates the number of contiguous packets preceding the largest acknowledged
      */
     public QuicAckFrame(long largestAck, long delay, long rangeCount, long firstAckRange) {
-    	
-    	this.setLargestAck(largestAck);
-    	this.setDelay(delay);
-    	this.setRangeCount(rangeCount);
-    	this.setFirstAckRange(firstAckRange);
-    	this.ackRanges= new ArrayList<>();
+        this.acks = new ArrayList<>();
+        this.gaps = new ArrayList<>();
+        if(largestAck<firstAckRange) {         // largest ACK should be less than first ACK range
+            this.setLargestAck(largestAck);
+            this.setDelay(delay);
+            this.setRangeCount(rangeCount);
+            this.setFirstAckRange(firstAckRange);
+        }else {
+            throw new IllegalArgumentException();
+        }
+
     }
-
-    @Override
-    public byte[] encode() throws IOException{
-    	
-    	ByteArrayOutputStream encoding = new ByteArrayOutputStream();
-
-		
-	    try {
-	    	encoding.write(Util.hexStringToByteArray("2",1));
-	    	encoding.write(Util.generateVariableLengthInteger(this.getLargestAck()));
-	    	encoding.write(Util.generateVariableLengthInteger(this.getDelay()));
-	    	encoding.write(Util.generateVariableLengthInteger(this.getRangeCount()));
-	    	encoding.write(Util.generateVariableLengthInteger(this.getFirstAckRange()));
-
-            Iterator<QuicAckRange> x = this.getAckRanges().iterator();
-            while(x.hasNext()){
-                QuicAckRange quicAckRange = x.next();
-                encoding.write(Util.generateVariableLengthInteger(quicAckRange.getGap()));
-                encoding.write(Util.generateVariableLengthInteger(quicAckRange.getAckRange()));
-            }
-
-	    	
-		} catch (Exception e) {
-
-		}
-
-	    
-        return encoding.toByteArray();
-    }
-
 
 
 
@@ -108,8 +91,11 @@ public class QuicAckFrame extends QuicFrame implements Serializable {
      * @param largestAck The largest packet number the peer is acknowledging
      */
     public void setLargestAck(long largestAck) {
-    	if(largestAck>=0) {
+        if(largestAck>=0) {
             this.largestAck = largestAck;
+        }
+        else{
+            throw new IllegalArgumentException();
         }
     }
 
@@ -131,6 +117,9 @@ public class QuicAckFrame extends QuicFrame implements Serializable {
         if(delay>=0) {
             this.delay = delay;
         }
+        else{
+            throw new IllegalArgumentException();
+        }
     }
 
     /**
@@ -151,6 +140,9 @@ public class QuicAckFrame extends QuicFrame implements Serializable {
         if(rangeCount>=0) {
             this.rangeCount = rangeCount;
         }
+        else{
+            throw new IllegalArgumentException();
+        }
     }
 
     /**
@@ -170,35 +162,76 @@ public class QuicAckFrame extends QuicFrame implements Serializable {
     public void setFirstAckRange(long firstAckRange) {
         if(firstAckRange>=0) {
             this.firstAckRange = firstAckRange;
+        }else{
+            throw new IllegalArgumentException();
         }
     }
 
-
     /**
-     * Getter for ackRanges in the frame
+     * Getter for gaps in the frame
      *
-     * @return the ackRanges
+     * @return the gaps
      */
-    public List<QuicAckRange> getAckRanges() {
-        if(this.ackRanges.size() <1){
-            this.ackRanges.add(new QuicAckRange(0,0));
-        }
-        ArrayList<QuicAckRange> temp =new ArrayList<>();
-        for(QuicAckRange x : this.ackRanges){
-           temp.add(x);
-
-        }
-        this.ackRanges.removeAll(temp);
-        return temp;
+    public List<Long> getGaps() {
+        return gaps;
     }
 
     /**
-     * Adds an AckRange to the given list
+     * Getter for acks in the frame
      *
-     * @param ackRange the range to add
+     * @return the acks
      */
-    public void addAckRange(QuicAckRange ackRange) {
-        this.ackRanges.add(ackRange);
+    public List<Long> getAcks() {
+        return acks;
+    }
+
+    /**
+     * Setter for gaps and acks in the frame. They must always be paired.
+     *
+     * @param gap the gap to set
+     * @param ack the ack to set
+     */
+    public void addGapAndAck(long gap, long ack) {
+        this.gaps.add(gap);
+        this.acks.add(ack);
+    }
+
+
+    @Override
+    public byte[] encode() throws IOException{
+    	
+    	ByteArrayOutputStream encoding = new ByteArrayOutputStream();
+    	encoding.write(Util.hexStringToByteArray("2",1));  // appending header
+        encoding.write(Util.generateVariableLengthInteger(this.getLargestAck())); // appending largest Ack as a variable length integer
+        encoding.write(Util.generateVariableLengthInteger(this.getDelay()));  // appending Ack Delay as a variable length integer
+        encoding.write(Util.generateVariableLengthInteger(this.getRangeCount())); // appending Range Count as a variable length integer
+        encoding.write(Util.generateVariableLengthInteger(this.getFirstAckRange())); // appending First Ack Range as a variable length integer
+
+        Iterator<Long> gapIterator = this.getGaps().iterator();
+        Iterator<Long> ackIterator  = this.getAcks().iterator();
+        while(gapIterator.hasNext() && ackIterator.hasNext()){
+            encoding.write(Util.generateVariableLengthInteger(gapIterator.next()));  // appending GAP as a variable length integer
+            encoding.write(Util.generateVariableLengthInteger(ackIterator.next()));  // appending Ack as a variable length integer
+        }
+        return encoding.toByteArray();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof QuicAckFrame)) return false;
+        QuicAckFrame that = (QuicAckFrame) o;
+        return getLargestAck() == that.getLargestAck() &&
+                getDelay() == that.getDelay() &&
+                getRangeCount() == that.getRangeCount() &&
+                getFirstAckRange() == that.getFirstAckRange() &&
+                Objects.equals(getGaps(), that.getGaps()) &&
+                Objects.equals(getAcks(), that.getAcks());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getLargestAck(), getDelay(), getRangeCount(), getFirstAckRange(), getGaps(), getAcks());
     }
 }
 

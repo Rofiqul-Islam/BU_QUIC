@@ -1,113 +1,138 @@
 package quic.frame;
 
+/**
+ * Tests for the QuicAckFrameTest class
+ *
+ * @author Rafi
+ */
+
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
-import java.io.IOException;
-import java.util.ArrayList;
+import java.util.stream.Stream;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import quic.exception.QuicException;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.TestFactory;
 
-class QuicAckFrameTest extends QuicFrame {
-	
-	ArrayList<QuicAckRange> ackRanges = new ArrayList<>();
-	private QuicAckFrame quicAckFrameTest = new QuicAckFrame(10, 10, 0, 10);
-
-	@BeforeAll
-	static void setUpBeforeClass() throws Exception {
-	}
-
-	@AfterAll
-	static void tearDownAfterClass() throws Exception {
-	}
-
-	@BeforeEach
-	void setUp() throws Exception {
-	}
-
-	@AfterEach
-	void tearDown() throws Exception {
-	}
+public class QuicAckFrameTest {
 
 
-	@Test
-	void testQuicAckFrame() {
-	
-		//As per specification
-		// Largest acknowledged value can not be negetive
-		assertTrue(quicAckFrameTest.getLargestAck() >= 0);
-		// Dealy value can not be negetive
-		assertTrue(quicAckFrameTest.getDelay() >= 0);
-		// Range count value can not be negetive
-		assertTrue(quicAckFrameTest.getRangeCount() >= 0);
-		// First ack range value can not be negetive
-		assertTrue(quicAckFrameTest.getFirstAckRange() >= 0);
-		// Ack ranges can not be empty
-		assertTrue(quicAckFrameTest.getAckRanges().size() >= 1);
-	
-	}
-	
-	@Test
-	void testLargestAcknowledged() {
-	}
-	
-	@Test
-	void testDelay() {
-	
-		//This value should be in microseconds
-	}
-	
-	@Test
-	void testRangeCount() {
-	}
-	
-	@Test
-	void testFirstAckRange() {
-		
-		//As per specification
-		// First ack range should be started from the largest acknowledged
-		assertTrue(quicAckFrameTest.getFirstAckRange() > quicAckFrameTest.getLargestAck());
-	
-	}
-	
-	@Test
-	void testAckRanges() {
-		
-		//As per specification
-		long tempLargestAck = this.quicAckFrameTest.getLargestAck();
-		for (QuicAckRange ackRange : this.ackRanges) {
-			
-			
-			long smallest = tempLargestAck - ackRange.getAckRange();
-			// Smallest value can not be negetive
-			assertTrue(smallest >= 0);
-			tempLargestAck = tempLargestAck - ackRange.getAckRange() - ackRange.getGap();
-			
-			long largest = smallest - ackRange.getGap() - 2;
-			// Largest value can not be negetive
-			assertTrue(largest >= 0);
-			
-		}
-		
-		
-		
-	
-	}
-	
-	@Test 
-	void testDecode() throws QuicException, IOException {
-		byte [] data = quicAckFrameTest.encode();
-		QuicAckFrame decodedFrame = (QuicAckFrame) QuicFrame.decode(data);
-		assertEquals(this.quicAckFrameTest, decodedFrame);
-	}
+    // Largest Acknowledged
+    public static Stream<Long> getValidLargestAck() {
+        return Stream.of(0L, 1L, 11L, 13L, 16L, 234L, 4611686018427387903L);
+    }
 
-	@Override
-	public byte[] encode() throws IOException {
-		return null;
-	}
+    public static Stream<Long> getInvalidLargestAck() {
+        return Stream.of(-1L, -1L, Long.MIN_VALUE, 4611686018427387904L,
+                Long.MAX_VALUE);
+    }
 
+    // ACK Delay
+    Stream<Long> getValidAckDelay() {
+        return Stream.of(0L, 1L, 3L, 23L, 30L, 4611686018427387903L);
+    }
+
+    Stream<Long> getInvalidAckDelay() {
+        return Stream.of(-1L, -31L, Long.MIN_VALUE, 4611686018427387904L,
+                Long.MAX_VALUE);
+    }
+
+
+    // ACK Range Count
+    Stream<Integer> getValidAckRangeCount() {
+        return Stream.of(0, 1, 31, 32, 1000);
+    }
+
+    Stream<Integer> getInvalidAckRangeCount() {
+        return Stream.of(-1, -31, -234634, Integer.MIN_VALUE,
+                Integer.MAX_VALUE);
+    }
+
+    // First ACK Range
+    Stream<Long> getValidFirstAckRange() {
+        return Stream.of(0L, 1L, 3L, 2L, 4L);
+    }
+
+    Stream<Long> getInvalidFirstAckRange() {
+        return Stream.of(-1L, -31L, -234634L, Long.MIN_VALUE, Long.MAX_VALUE);
+    }
+
+    @Nested
+    public class ConstructorTest {
+
+        @TestFactory
+        public Stream<DynamicTest> testValid() {
+            return getValidLargestAck().flatMap(largestAck
+                    -> getValidAckDelay().flatMap(ackDelay
+                    -> getValidAckRangeCount().flatMap(rangeCount
+                    -> getValidFirstAckRange().map(firstAckRange
+                    -> dynamicTest("largest Acknowledgement = "
+                            + largestAck + ", ACK Delay = " + ackDelay
+                            + ", ACK Range Count = " + rangeCount
+                            + ", First ACK Range = " + firstAckRange,
+                    () -> {
+                        long[] gaps = new long[rangeCount];
+                        long[] acks = new long[rangeCount];
+
+                        if (largestAck < firstAckRange) {
+                            QuicAckFrame frame =
+                                    new QuicAckFrame(largestAck, ackDelay,
+                                            rangeCount, firstAckRange);
+                            for (int i = 0; i < rangeCount; i++) {
+                                frame.addGapAndAck(gaps[i], acks[i]);
+                            }
+                            assertEquals(largestAck, frame.getLargestAck());
+                            assertEquals(ackDelay, frame.getDelay());
+                            assertEquals((long) rangeCount,
+                                    frame.getRangeCount());
+                            assertEquals(firstAckRange,
+                                    frame.getFirstAckRange());
+                            assertEquals(rangeCount, frame.getGaps().size());
+                        }
+                    })))));
+        }
+
+        @TestFactory
+        public Stream<DynamicTest> testInvalidLargestAck() {
+            return getInvalidLargestAck().map(largestAck ->
+                    dynamicTest("largest Acknowledgement: "
+                            + largestAck, () -> {
+                        assertThrows(IllegalArgumentException.class, () -> {
+                            QuicAckFrame frame = new QuicAckFrame(-1, 1, 1, 1);
+                        });
+                    }));
+        }
+
+        @TestFactory
+        public Stream<DynamicTest> testInvalidAckDelay() {
+            return getInvalidAckDelay()
+                    .map(ackDelay -> dynamicTest("ACK Delay: " + ackDelay, () -> {
+                        assertThrows(IllegalArgumentException.class, () -> {
+                            QuicAckFrame frame = new QuicAckFrame(1, -1, 1, 1);
+                        });
+                    }));
+        }
+
+        @TestFactory
+        public Stream<DynamicTest> testInvalidAckRangeCount() {
+            return getInvalidAckRangeCount().map(ackRangeCount
+                    -> dynamicTest("ACK Range Count" + ackRangeCount,
+                    () -> {
+                        assertThrows(IllegalArgumentException.class, () -> {
+                            QuicAckFrame frame = new QuicAckFrame(1, 1, -1, 1);
+                        });
+                    }));
+        }
+
+        @TestFactory
+        public Stream<DynamicTest> testInvalidFirstAckRange() {
+            return getInvalidFirstAckRange().map(firstAckRange
+                    -> dynamicTest("First ACK Range" + firstAckRange, () -> {
+                assertThrows(IllegalArgumentException.class, () -> {
+                    QuicAckFrame frame = new QuicAckFrame(1, 1, 1, -1);
+                });
+            }));
+        }
+    }
 }

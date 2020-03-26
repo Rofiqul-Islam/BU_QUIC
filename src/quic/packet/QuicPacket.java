@@ -14,6 +14,7 @@ import java.util.*;
  * Chapter 12.3
  *
  * @version 1.2
+ * @author Md Rofiqul Islam
  */
 public abstract class QuicPacket {
 
@@ -71,7 +72,7 @@ public abstract class QuicPacket {
      *
      * @return byte[]
      */
-    public byte[] encode() {
+    public byte[] encode() throws QuicException, IOException {
         return new byte[3];
     }
 
@@ -101,20 +102,20 @@ public abstract class QuicPacket {
         int headerArry[] = new int[8];
         int headerByte;
         try {
-            System.out.println("---------------------------------------");
             headerByte = (int) arr[0];
-            if (headerByte < 0) {
+            if (headerByte < 0) {           // header byte cannot be negative
                 headerByte += 256;
             }
-            if (headerByte < 64) {
+            if (headerByte < 64) {          // header byte cannot be less than 64
                 throw new QuicException(10, 0, "Invalid header byte");
             }
-            if((headerByte & 12) != 0){
+            if((headerByte & 12) != 0){           // assuming the reserved bit will be always 0
                 throw new QuicException(10, 0, "Invalid header byte");
             }
-            if((headerByte & 64) ==0){
+            if((headerByte & 64) ==0){         // 0x40 position of all packet should be set
                 throw new QuicException(10, 0, "Invalid header byte");
             }
+            // generating a  header array from header byte
             for (int c = 7; c >= 0; c--) {
                 int x = (int) Math.pow(2, c);
                 if ((x & headerByte) == 0) {
@@ -123,25 +124,17 @@ public abstract class QuicPacket {
                     headerArry[7 - c] = 1;
                 }
             }
-            System.out.println("headerByte = " + headerByte);
         } catch (Exception e) {
             throw new QuicException(10, 0, "invalid header byte");
         }
-        if (headerArry[0] == 0) {
+        if (headerArry[0] == 0) {   // if the first bit of header is 0 , that means it is short header packet
             //shortheader
             return decode(arr,getDcIdSize());
-        } else if (headerArry[0] == 1) {                          //Long header
+        } else if (headerArry[0] == 1) {                          //first bit of header is 1, Long header packet
             if (headerArry[2] == 0 && headerArry[3] == 0) {
-                //intialpacket
-                return Util.quicIntialPacketDecoder(0, arr, headerByte, headerArry);
-            } else if (headerArry[2] == 0 && headerArry[3] == 1) {
-                //0-RTT
-                return Util.quicLongHeaderPacketDecoder(1, arr, headerByte, headerArry);
-            } else if (headerArry[2] == 1 && headerArry[3] == 0) {
-                //handshake
-                return Util.quicLongHeaderPacketDecoder(2, arr, headerByte, headerArry);
-
-            } else {
+                //intialpacket , 3rd and 4th bit are 0
+                return Util.quicIntialPacketDecoder( arr, headerByte);
+            }  else {
                 throw new QuicException(0, 0, "header byte invalid");
             }
 

@@ -5,12 +5,15 @@ import quic.util.Util;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Represents a QUIC STREAM frame. The STREAM frame manages a data stream. It
  * can create a stream and carry data.
  *
  * @version 1.1
+ * @author Md Rofiqul Islam
  */
 public class QuicStreamFrame extends QuicFrame {
     byte header;
@@ -57,19 +60,27 @@ public class QuicStreamFrame extends QuicFrame {
         return this.streamId;
     }
 
+    /**
+     * Getter of header byte
+     * @return
+     */
     public byte getHeader() {
         return header;
     }
 
+    /**
+     * Setter of header byte
+     * @param header
+     */
     public void setHeader(byte header) {
         this.header = header;
-        if(this.getOffset()>0){
+        if(this.getOffset()>0){   // offset bit is set when offset is greater than 0
             this.header = (byte) (this.header | 4);
         }
 
         this.header = (byte) (this.header | 2);    // always setting len bit
 
-        if(this.isEndOfStream()){
+        if(this.isEndOfStream()){    // fin bit is set when it is the last frame of data
             this.header = (byte)(this.header | 1);
         }
     }
@@ -80,7 +91,12 @@ public class QuicStreamFrame extends QuicFrame {
      * @param streamId the ID to set
      */
     public void setStreamId(long streamId) {
-        this.streamId = streamId;
+        if(streamId>=0 && streamId<(long)Math.pow(2,62)) {
+            this.streamId = streamId;
+        }else{
+            throw new IllegalArgumentException();
+        }
+
     }
 
     /**
@@ -98,7 +114,12 @@ public class QuicStreamFrame extends QuicFrame {
      * @param offset the offset to set
      */
     public void setOffset(long offset) {
-        this.offset = offset;
+        if(offset>=0 && offset<(long)Math.pow(2,62)) {
+            this.offset = offset;
+        }else{
+            throw new IllegalArgumentException();
+        }
+
     }
 
     /**
@@ -141,26 +162,45 @@ public class QuicStreamFrame extends QuicFrame {
 
     @Override
     public byte[] encode() throws IOException {
-        ByteArrayOutputStream bufferOutputStream = new ByteArrayOutputStream();
-        ObjectOutputStream objectOutputStream = new ObjectOutputStream(bufferOutputStream);
-
-        try {
-            objectOutputStream.writeObject(this.getHeader());
-            objectOutputStream.writeObject(Util.generateVariableLengthInteger(this.getStreamId()));
-            if(this.getOffset()>0) {
-                objectOutputStream.writeObject(Util.generateVariableLengthInteger(this.getOffset()));
-            }
-            objectOutputStream.writeObject(Util.generateVariableLengthInteger((long)this.getData().length));
-            objectOutputStream.writeObject(this.getData());
-            objectOutputStream.flush();
-
-        } catch (IOException e) {
-
-            e.printStackTrace();
+        ByteArrayOutputStream encoding = new ByteArrayOutputStream();
+        encoding.write(this.getHeader()); // appending header byte
+        encoding.write(Util.generateVariableLengthInteger(this.getStreamId())); // appending Stream id as a variable length integer
+        if(this.getOffset()>0) {
+            encoding.write(Util.generateVariableLengthInteger(this.getOffset())); // appending Offset as a variable length integer
         }
+        encoding.write(Util.generateVariableLengthInteger((long)this.getData().length));  // appending length as a variable length integer
+        encoding.write(this.getData());
 
-        byte [] data = bufferOutputStream.toByteArray();
 
+        byte [] data = encoding.toByteArray();
         return data;
+    }
+
+    @Override
+    public String toString() {
+        return "QuicStreamFrame{" +
+                "streamId=" + this.getStreamId() +
+                ", offset=" +this.getOffset()+
+                ", endOfStream=" + this.isEndOfStream() +
+                "}";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof QuicStreamFrame)) return false;
+        QuicStreamFrame that = (QuicStreamFrame) o;
+        return getHeader() == that.getHeader() &&
+                getStreamId() == that.getStreamId() &&
+                getOffset() == that.getOffset() &&
+                isEndOfStream() == that.isEndOfStream() &&
+                Arrays.equals(getData(), that.getData());
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(getHeader(), getStreamId(), getOffset(), isEndOfStream());
+        result = 31 * result + Arrays.hashCode(getData());
+        return result;
     }
 }

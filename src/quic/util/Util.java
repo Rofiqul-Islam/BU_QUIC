@@ -3,60 +3,70 @@ package quic.util;
 import quic.exception.QuicException;
 import quic.frame.*;
 import quic.packet.*;
-
-
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.HashSet;
 
 import java.util.Set;
 
-
+/**
+ * Util class
+ *
+ * @author Md Rofiqul Islam
+ */
 public class Util {
 
-    public static long largestPacketNumber =0;
+    private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 
-    public static int variableLengthIntegerLength(byte b){
-        int temp = (int)b;
+    /**
+     * Method for retrieveing the length of variable length integer
+     *
+     * @param b first byte of variable length integer
+     * @return the length of variable length integer
+     */
+    public static int variableLengthIntegerLength(byte b) {
+        int temp = (int) b;
         int lenArry[] = new int[2];
-        for(int c=7;c>=6;c--){
-            int x = (int) Math.pow(2,c);
-            if((x&temp)==0){
-                lenArry[7-c]=0;
-            }
-            else{
-                lenArry[7-c]=1;
+        for (int c = 7; c >= 6; c--) {
+            int x = (int) Math.pow(2, c);
+            if ((x & temp) == 0) {
+                lenArry[7 - c] = 0;
+            } else {
+                lenArry[7 - c] = 1;
             }
         }
-        if(lenArry[0]==0 && lenArry[1]==0){
-            return  1;
-        }
-        else if(lenArry[0]==0 && lenArry[1]==1){
+        if (lenArry[0] == 0 && lenArry[1] == 0) {
+            return 1;
+        } else if (lenArry[0] == 0 && lenArry[1] == 1) {
             return 2;
-        }
-        else if(lenArry[0]==1 && lenArry[1]==0){
+        } else if (lenArry[0] == 1 && lenArry[1] == 0) {
             return 4;
-        }
-        else if(lenArry[0]==1 && lenArry[1]==1){
+        } else if (lenArry[0] == 1 && lenArry[1] == 1) {
             return 8;
         }
 
         return 0;
     }
 
-    public static long variableLengthInteger(byte[] input,int type){
-        if(type==0) {
+    /**
+     * Method for converting byte array to long.
+     * Have two functionalites.
+     * Able to convert both normal byte array and variavle length integer byte array to Long
+     *
+     * @param input Byte array containg variable length integer
+     * @param type  type =0 for normal byte array, type =1 for variable length integer array
+     * @return the long value of byte array and variable length integer array
+     */
+    public static long variableLengthInteger(byte[] input, int type) {
+        if (type == 0) {
             String s = bytesArrayToHex(input);
             Long result = Long.parseLong(s, 16);
             return result;
-        }
-        else if(type == 1){
-            String s =Util.byteToHex((byte)(input[0]&63));
-            byte [] temp = new byte[input.length-1];
-            for(int i=1;i<input.length;i++){
-                temp[i-1]=input[i];
+        } else if (type == 1) {
+            String s = Util.byteToHex((byte) (input[0] & 63));
+            byte[] temp = new byte[input.length - 1];
+            for (int i = 1; i < input.length; i++) {
+                temp[i - 1] = input[i];
             }
-            s+=bytesArrayToHex(temp);
+            s += bytesArrayToHex(temp);
             //System.out.println("s = "+s);
             Long result = Long.parseLong(s, 16);
             return result;
@@ -64,31 +74,40 @@ public class Util {
         return 0;
     }
 
-    public static byte[] generateVariableLengthInteger(Long input){
-        if(input<Math.pow(2,6)){              // adding 00 before the length
-            byte[] temp = Util.hexStringToByteArray(Long.toHexString(input),1);
-            temp[0]+=0;
+    /**
+     * Method for converting long input to variable length integer
+     *
+     * @param input long input which should be converted into variable length integer
+     * @return byte array containing the variable length integer
+     */
+    public static byte[] generateVariableLengthInteger(Long input) {
+        if (input < Math.pow(2, 6)) {              // adding 00 before the length
+            byte[] temp = Util.hexStringToByteArray(Long.toHexString(input), 1);
+            temp[0] += 0;
             return temp;
-        }
-        else if(input<Math.pow(2,14)){        // adding 01 before the length
-            byte[] temp = Util.hexStringToByteArray(Long.toHexString(input),2);
-            temp[0]+=64;
+        } else if (input < Math.pow(2, 14)) {        // adding 01 before the length
+            byte[] temp = Util.hexStringToByteArray(Long.toHexString(input), 2);
+            temp[0] += 64;
             return temp;
-        }
-        else if(input<Math.pow(2,30)){        // adding 10 before the length
-            byte[] temp = Util.hexStringToByteArray(Long.toHexString(input),4);
-            temp[0]+=128;
+        } else if (input < Math.pow(2, 30)) {        // adding 10 before the length
+            byte[] temp = Util.hexStringToByteArray(Long.toHexString(input), 4);
+            temp[0] += 128;
             return temp;
-        }
-        else if(input<(long)Math.pow(2,62)){     //adding 11 before the integer
-            byte[] temp = Util.hexStringToByteArray(Long.toHexString(input),8);
-            temp[0]+=192;
+        } else if (input < (long) Math.pow(2, 62)) {     //adding 11 before the integer
+            byte[] temp = Util.hexStringToByteArray(Long.toHexString(input), 8);
+            temp[0] += 192;
             return temp;
         }
         return null;
     }
 
-    private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
+
+    /**
+     * Method for converting bytes array to Hex String
+     *
+     * @param bytes input byte array
+     * @return Hex String generated from byte array
+     */
     public static String bytesArrayToHex(byte[] bytes) {
         char[] hexChars = new char[bytes.length * 2];
         for (int j = 0; j < bytes.length; j++) {
@@ -99,14 +118,26 @@ public class Util {
         return new String(hexChars);
     }
 
-
-    public static String byteToHex(byte b){
+    /**
+     * Method for converting byte to Hex
+     *
+     * @param b input byte
+     * @return Hex value
+     */
+    public static String byteToHex(byte b) {
         int v = b & 0xFF;
-        String hex_string = HEX_ARRAY[v >>> 4]+"";
-        hex_string+= HEX_ARRAY[v & 0x0F];
+        String hex_string = HEX_ARRAY[v >>> 4] + "";
+        hex_string += HEX_ARRAY[v & 0x0F];
         return hex_string;
     }
 
+    /**
+     * Method for converting Hex String to byte array
+     *
+     * @param s           input string which need to be converted into byte array
+     * @param requiredLen parameter for generating a fix size byte array
+     * @return fixed size byte array
+     */
     public static byte[] hexStringToByteArray(String s, int requiredLen) {
         if (requiredLen == 0) {
             int len = s.length();
@@ -133,494 +164,172 @@ public class Util {
         }
     }
 
-
-
-    public static boolean allZero(byte[] data) {
-        for (int i = 0; i < data.length; i++) {
-            if (data[i] != 0) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public static String printConnectionId(byte[] connectionId) {
-        StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < connectionId.length; i++) {
+    /**
+     * Method for converting byte array to string
+     *
+     * @param input byte array
+     * @return output string
+     */
+    public static String byteToString(byte[] input) {
+        StringBuilder string = new StringBuilder();
+        for (int i = 0; i < input.length; i++) {
             // Only print the last two digits, but add a 0 if we need one
-            String b = "0" + Integer.toHexString(connectionId[i]);
-            builder.append(b.substring(b.lastIndexOf("") - 2));
+            String b = "0" + Integer.toHexString(input[i]);
+            string.append(b.substring(b.lastIndexOf("") - 2));
         }
-        return builder.toString();
+        return string.toString();
     }
 
-    public static QuicPacket quicIntialPacketDecoder(int type, byte[] arr, int headerByte, int headerArry[]) throws QuicException {
+    /**
+     * Method for decoding initial packet
+     *
+     * @param arr        byte array containing encoded initial packet
+     * @param headerByte
+     * @return
+     * @throws QuicException
+     */
+    public static QuicPacket quicIntialPacketDecoder(byte[] arr, int headerByte) throws QuicException {
         try {
-            int p = 1;
-            byte[] version_arr = new byte[4];
-            int n = p;
-            for (; n < p + 4; n++) {
-                version_arr[n - p] = arr[n];
+            //-----------version -------------//
+            int pointer= 1;
+            byte[] version_arr = new byte[4];   // version takes 4 bytes
+            int n = pointer;
+            for (; n < pointer + 4; n++) {
+                version_arr[n - pointer] = arr[n];
             }
-            long version = Util.variableLengthInteger(version_arr, 0);
+            long version = Util.variableLengthInteger(version_arr, 0); // generating long version from byte array
             System.out.println("version = " + version);
-            p = n;
-            ////////////////////////////
-            int dcIdLenD = (int) arr[p];
-            System.out.println("dcidlen = " + dcIdLenD);
-            p++;
+            pointer = n;
+            //-------------Destination ID -----------------//
+            int dcIdLenD = (int) arr[pointer]; //destination id length
+            pointer++;
             byte[] dcIdD = new byte[dcIdLenD];
-            int i = p;
-            for (; i < p + dcIdLenD; i++) {
-                dcIdD[i - p] = arr[i];
+            int i = pointer;
+            for (; i < pointer + dcIdLenD; i++) {
+                dcIdD[i - pointer] = arr[i];           // generating Destination Id byte array
             }
-            System.out.print("dcId = ");
-            for (byte x : dcIdD) {
-                System.out.print(Util.byteToHex(x) + " ");
-            }
-            System.out.println();
-            p = i;
-            ///////////////////////////
-            int scIdLenD = (int) arr[p];
-            System.out.println("scidlen = " + scIdLenD);
-            p++;
+            pointer= i;
+            //--------------Source Id ------------------//
+            int scIdLenD = (int) arr[pointer];
+            pointer++;
             byte[] scIdD = new byte[scIdLenD];
-            int j = p;
-            for (; j < p + scIdLenD; j++) {
-                scIdD[j - p] = arr[j];
+            int j = pointer;
+            for (; j < pointer + scIdLenD; j++) {
+                scIdD[j - pointer] = arr[j];        // generating Source Id byte array
             }
-            System.out.print("scId = ");
-            for (byte x : scIdD) {
-                System.out.print(Util.byteToHex(x) + " ");
-            }
-            System.out.println();
-            p = j;
-            ////////////////////////////
-            int tokenLengthLen = Util.variableLengthIntegerLength(arr[p]);
+            pointer = j;
+            //----------------token -----------------------//
+            int tokenLengthLen = Util.variableLengthIntegerLength(arr[pointer]);
             byte[] tokenLength_arr = new byte[tokenLengthLen];
-            for (int c = p; c < p + tokenLengthLen; c++) {
-                tokenLength_arr[c - p] = arr[c];
+            for (int c = pointer; c < pointer + tokenLengthLen; c++) {
+                tokenLength_arr[c - pointer] = arr[c];
             }
-            p += tokenLengthLen;
-            long tokenLength = Util.variableLengthInteger(tokenLength_arr, 1);
-            System.out.println("Token length = " + tokenLength);
-
+            pointer += tokenLengthLen;
+            long tokenLength = Util.variableLengthInteger(tokenLength_arr, 1); // generating token length from
+                                                                                     //  variable length integer
             byte[] token = new byte[(int) tokenLength];
-            for (int c = p; c < p + tokenLength; c++) {
-                token[c - p] = arr[c];
+            for (int c = pointer; c < pointer + tokenLength; c++) {
+                token[c - pointer] = arr[c];             // generating token array
             }
-            p += tokenLength;
-            ////////////////////////////
-            int lengthSize = Util.variableLengthIntegerLength(arr[p]);
+            pointer += tokenLength;
+            //------------ length-----------------//
+            int lengthSize = Util.variableLengthIntegerLength(arr[pointer]);
             byte[] len_arr = new byte[lengthSize];
-            for (int c = p; c < lengthSize + p; c++) {
-                len_arr[c - p] = arr[c];
+            for (int c = pointer; c < lengthSize + pointer; c++) {
+                len_arr[c - pointer] = arr[c];
             }
-            p += lengthSize;
-            long length = Util.variableLengthInteger(len_arr, 1);
-            System.out.println("length = " + length);
-            ///////////////////////////////////////
-            int packetNoLen = (headerByte & 3) + 1;
+            pointer += lengthSize;
+            long length = Util.variableLengthInteger(len_arr, 1); // generating length from variable length integer
+            //-------------packet number------------------//
+            int packetNoLen = (headerByte & 3) + 1;  // last two bit of header byte indicates the packet number length
 
             byte[] packNum_arr = new byte[packetNoLen];
-            for (int c = p; c < packetNoLen + p; c++) {
-                packNum_arr[c - p] = arr[c];
+            for (int c = pointer; c < packetNoLen + pointer; c++) {
+                packNum_arr[c - pointer] = arr[c];            // generating packet number containing byte array
             }
-            p += packetNoLen;
-            long packetNum = Util.variableLengthInteger(packNum_arr, 0);
-            System.out.println("packetNumber = " + packetNum);
-            /////////
-            byte[] payload = new byte[(int) (length - packetNoLen)];
-            int k = p;
-
-            for (; k < p + (length - (packetNoLen)); k++) {
-                payload[k - p] = arr[k];
+            pointer += packetNoLen;
+            long packetNum = Util.variableLengthInteger(packNum_arr, 0); // converting byte array to long
+            //----------payload--------------//
+            byte[] payload = new byte[(int) (length - packetNoLen)];   // (length -packen number length) indicates the payload size
+            int k = pointer;
+            for (; k < pointer + (length - (packetNoLen)); k++) {
+                payload[k - pointer] = arr[k];           // generating the payload array
                 System.out.print(k + " ");
             }
-            p = k;
-            if (type == 0) {
-                QuicPacket initialPacket = new QuicInitialPacket(dcIdD, packetNum, version, scIdD, frameDecode(payload));
-                return initialPacket;
-            }
-        }catch (Exception e){
-            throw new QuicException(10,0,"initial packet decode error");
+            pointer = k;
+            QuicPacket initialPacket = new QuicInitialPacket(dcIdD, packetNum, version, scIdD, frameDecode(payload)); // creating new initial packet
+            return initialPacket;
+        } catch (Exception e) {
+            throw new QuicException(10, 0, "initial packet decode error");
         }
 
-        return null;
+
     }
 
+    /**
+     * Method for decoding the payload and generate frame set
+     *
+     * @param payload payload from packet
+     * @return set of frames
+     * @throws QuicException
+     */
     public static Set<QuicFrame> frameDecode(byte[] payload) throws QuicException {
         Set<QuicFrame> temp = new HashSet<>();
         QuicFrame.setPayloadPostionIndicator(0);
-        while(QuicFrame.getPayloadPostionIndicator()<payload.length){
-            System.out.println("paylodad indicatior = "+QuicFrame.getPayloadPostionIndicator()+" Payload length = "+payload.length);
+        QuicFrame.setFlag(1);
+        while (QuicFrame.getPayloadPostionIndicator() < payload.length) {
             temp.add(QuicFrame.decode(payload));
         }
+        QuicFrame.setFlag(0);
         return temp;
     }
 
-    public static QuicPacket quicLongHeaderPacketDecoder(int type, byte[] arr, int headerByte, int headerArry[]) throws QuicException {
-        try {
-            int p = 1;
-            byte[] version_arr = new byte[4];
-            int n = p;
-            for (; n < p + 4; n++) {
-                version_arr[n - p] = arr[n];
-            }
-            long version = Util.variableLengthInteger(version_arr, 0);
-            System.out.println("version = " + (version-4278190080l));
-            p = n;
-            ////////////////////////////
-            int dcIdLenD = (int) arr[p];
-            System.out.println("dcidlen = " + dcIdLenD);
-            p++;
-            byte[] dcIdD = new byte[dcIdLenD];
-            int i = p;
-            for (; i < p + dcIdLenD; i++) {
-                dcIdD[i - p] = arr[i];
-            }
-            System.out.print("dcId = ");
-            for (byte x : dcIdD) {
-                System.out.print(Util.byteToHex(x) + " ");
-            }
-            System.out.println();
-            p = i;
-            ///////////////////////////
-            int scIdLenD = (int) arr[p];
-            System.out.println("scidlen = " + scIdLenD);
-            p++;
-            byte[] scIdD = new byte[scIdLenD];
-            int j = p;
-            for (; j < p + scIdLenD; j++) {
-                scIdD[j - p] = arr[j];
-            }
-            System.out.print("scId = ");
-            for (byte x : scIdD) {
-                System.out.print(Util.byteToHex(x) + " ");
-            }
-            System.out.println();
-            p = j;
-            ////////////////////////////
-            int lengthSize = Util.variableLengthIntegerLength(arr[p]);
-            byte[] len_arr = new byte[lengthSize];
-            for (int c = p; c < lengthSize + p; c++) {
-                len_arr[c - p] = arr[c];
-            }
-            p += lengthSize;
-            long length = Util.variableLengthInteger(len_arr, 1);
-            System.out.println("length = " + length);
-            ///////////////////////////////////////
-            int packetNoLen = (headerByte & 3) + 1;
 
-            byte[] packNum_arr = new byte[packetNoLen];
-            for (int c = p; c < packetNoLen + p; c++) {
-                packNum_arr[c - p] = arr[c];
-            }
-            p += packetNoLen;
-            long packetNum = Util.variableLengthInteger(packNum_arr, 0);
-            System.out.println("packetNumber = " + packetNum);
-            /////////
-            System.out.println("***** Payload start *****");
-            byte[] payload = new byte[(int) (length - packetNoLen)];
-            int k = p;
-
-            for (; k < p + (length - (packetNoLen)); k++) {
-                payload[k - p] = arr[k];
-            }
-            p = k;
-
-
-            if (type == 1) {
-                QuicPacket zeroRttPacket = new QuicZeroRTTPacket(dcIdD, packetNum, version, scIdD, frameDecode(payload));
-                System.out.println("***** Payload finsihed *****");
-                return zeroRttPacket;
-            } else if (type == 2) {
-                QuicPacket handshakePacket = new QuicHandshakePacket(dcIdD, packetNum, version, scIdD, frameDecode(payload));
-                System.out.println("***** Payload finsihed *****");
-                return handshakePacket;
-            }
-        }catch (Exception e){
-            e.printStackTrace();
-            throw new QuicException(100,0,"longheader decoder error");
-        }
-
-        return null;
-    }
-
-
+    /**
+     * Method for decoding the short header packet
+     * @param arr   byte array containing encoded shortHeader packet
+     * @param dcIdSize
+     * @return
+     * @throws QuicException
+     */
     public static QuicPacket quicShortHeaderDecoder(byte[] arr, int dcIdSize) throws QuicException {
         try {
-            int p = 0;
-            int headerArry[] = new int[8];
-            int headerByte = (int) arr[0];;
-            for (int c = 7; c >= 0; c--) {
-                int x = (int) Math.pow(2, c);
-                if ((x & headerByte) == 0) {
-                    headerArry[7 - c] = 0;
-                } else {
-                    headerArry[7 - c] = 1;
-                }
-            }
-            /////////////////////////
-            p++;
+            int pointer = 0;
+            int headerByte = (int) arr[0];
+            //--------------Destination ID -----------------//
+            pointer ++;
             int dcIdLenD = dcIdSize;
-            System.out.println("dcidlen = " + dcIdLenD);
             byte[] dcIdD = new byte[dcIdLenD];
-            int i = p;
-            for (; i < p + dcIdLenD; i++) {
-                dcIdD[i - p] = arr[i];
+            int i = pointer ;
+            for (; i < pointer + dcIdLenD; i++) {
+                dcIdD[i - pointer] = arr[i];        //generating Destination byte array
             }
-            System.out.print("dcId = ");
-            for (byte x : dcIdD) {
-                System.out.print(Util.byteToHex(x) + " ");
-            }
-            System.out.println();
-            p = i;
-            //////////////////////////////
-            int packetNoLen = (headerByte & 3) + 1;
+            pointer = i;
+            //---------packet number ---------------//
+            int packetNoLen = (headerByte & 3) + 1;      // last two bit of header byte indicates the packet number length
 
             byte[] packNum_arr = new byte[packetNoLen];
-            for (int c = p; c < packetNoLen + p; c++) {
-                packNum_arr[c - p] = arr[c];
+            for (int c = pointer; c < packetNoLen + pointer; c++) {
+                packNum_arr[c - pointer] = arr[c]; // generating packet number array
             }
-            p += packetNoLen;
+            pointer += packetNoLen;
             long packetNum = Util.variableLengthInteger(packNum_arr, 0);
-            System.out.println("packetNumber = " + packetNum);
-            //////////////////////////////////
-            byte[] payload = new byte[(int) (arr.length - p)];
-            int k = p;
+            //----------------payload ----------------//
+            byte[] payload = new byte[(int) (arr.length - pointer)];        // all bytes after packet number is a part of payload
+            int k = pointer;
 
             for (; k < arr.length; k++) {
-                payload[k - p] = arr[k];
+                payload[k - pointer] = arr[k];         // generating payload
                 System.out.print(k + " ");
             }
-            p = k;
-            QuicPacket shortHeaderPacket = new QuicShortHeaderPacket(dcIdD, packetNum, frameDecode(payload));
+            pointer = k;
+            QuicPacket shortHeaderPacket = new QuicShortHeaderPacket(dcIdD, packetNum, frameDecode(payload));  // creating Quic short header packet
             return shortHeaderPacket;
 
-        }catch (Exception e){
-            throw new QuicException(10,0,"Short Header packet decoder error");
+        } catch (Exception e) {
+            throw new QuicException(10, 0, "Short Header packet decoder error");
         }
     }
-    //////////////////////////
-
-    public static DecodedFrame quicAckFrameDecoder(byte[] arr, int index){
-
-        System.out.println("Frame Type  = ACK Frame");
-        System.out.println("header byte = "+(int)arr[index]);
-        int p=index+1;
-        int largestAckLen = Util.variableLengthIntegerLength(arr[p]);
-        byte[] largestAck_arr = new byte[largestAckLen];
-        for(int n = p;n<p+largestAckLen;n++){
-            largestAck_arr[n-p] = arr[n];
-        }
-        long largestAck = Util.variableLengthInteger(largestAck_arr,1);
-        p=p+largestAckLen;
-        System.out.println("largest Ack = "+largestAck);
-        ///////////////////////////////////////////////////////
-
-        int ackDelayLen = Util.variableLengthIntegerLength(arr[p]);
-        byte[] ackDelay_arr = new byte[ackDelayLen];
-        for(int n = p;n<p+ackDelayLen;n++){
-            ackDelay_arr[n-p] = arr[n];
-        }
-        long ackDelay = Util.variableLengthInteger(ackDelay_arr,1);
-        p=p+ackDelayLen;
-        System.out.println("Ack delay = "+ackDelay);
-        ///////////////////////////////////////
-        int ackRangeCountLen = Util.variableLengthIntegerLength(arr[p]);
-        byte[]  ackRangeCount_arr = new byte[ackRangeCountLen];
-        for(int n= p; n<p+ackRangeCountLen;n++){
-            ackRangeCount_arr[n-p] = arr[n];
-        }
-        long ackRangeCount = Util.variableLengthInteger(ackRangeCount_arr, 1);
-        p=p+ackRangeCountLen;
-        System.out.println("Ack Range Count  = "+ackRangeCount);
-        //////////////////////////////////////////////////////////
-        int firstAckRangeLen = Util.variableLengthIntegerLength(arr[p]);
-        byte[] firstAckRange_arr = new byte[firstAckRangeLen];
-        for(int n= p;n<p+firstAckRangeLen;n++){
-            firstAckRange_arr[n-p]= arr[n];
-        }
-        long firstAckRange = Util.variableLengthInteger(firstAckRange_arr,1);
-        p=p+firstAckRangeLen;
-        System.out.println("first ACK range = "+firstAckRange);
-        ////////////////////////////////////////////////////
-        ArrayList<QuicAckRange> tempAckRanges = new ArrayList<>();
-        for(long i=0;i<ackRangeCount;i++){
-            int gapLen = Util.variableLengthIntegerLength(arr[p]);
-            byte[] gap_arr = new byte[gapLen];
-            for (int n = p;n<p+gapLen;n++){
-                gap_arr[n-p]=arr[n];
-            }
-            long gap = Util.variableLengthInteger(gap_arr,1);
-            p=p+gapLen;
-
-            int ackRangeLen = Util.variableLengthIntegerLength(arr[p]);
-            byte[] ackRange_arr = new byte[ackRangeLen];
-            for (int n = p;n<p+ackRangeLen;n++){
-                ackRange_arr[n-p]=arr[n];
-            }
-            long ackRange = Util.variableLengthInteger(ackRange_arr,1);
-            p=p+ackRangeLen;
-
-
-            tempAckRanges.add(new QuicAckRange(gap,ackRange));
-        }
-
-        QuicAckFrame quicAckFrame = new QuicAckFrame(largestAck,ackDelay,ackRangeCount,firstAckRange);
-        for(QuicAckRange x : tempAckRanges){
-            quicAckFrame.addAckRange(x);
-        }
-        return new DecodedFrame(quicAckFrame,p);
-
-
-    }
-
-    public static DecodedFrame quicStreamFrameDecoder(byte[] arr, byte headerByte,int index){
-        System.out.println("Frame Type  = Stream Frame");
-        System.out.println("header byte = "+(int)arr[index]);
-        boolean offbit=false;
-        boolean lenBit = false;
-        boolean finBit = false;
-        if((headerByte & 4)>0){
-            offbit = true;
-        }
-        if((headerByte & 2)>0){
-            lenBit = true;
-        }
-        if((headerByte & 1)>0){
-            finBit = true;
-        }
-        int p = index+1;
-        int streamIdLen = Util.variableLengthIntegerLength(arr[p]);
-        byte[] streamId_arr = new byte[streamIdLen];
-        for(int n = p;n<p+streamIdLen;n++){
-            streamId_arr[n-p] = arr[n];
-        }
-        long streamId = Util.variableLengthInteger(streamId_arr,1);
-        p=p+streamIdLen;
-        ///////////////////////////////////////
-        long offset=0;
-        if(offbit){
-            int offsetLen = Util.variableLengthIntegerLength(arr[p]);
-            byte[] offset_arr = new byte[offsetLen];
-            for(int n = p;n<p+offsetLen;n++){
-                offset_arr[n-p] = arr[n];
-            }
-            offset = Util.variableLengthInteger(offset_arr,1);
-            p=p+offsetLen;
-        }
-        //////////////////////////////////////
-        long streamDataLength = 0;
-        if(lenBit){
-            int streamDataLengthLen = Util.variableLengthIntegerLength(arr[p]);
-            byte[] streamDataLength_arr = new byte[streamDataLengthLen];
-            for(int n = p;n<p+streamDataLengthLen;n++){
-                streamDataLength_arr[n-p] = arr[n];
-            }
-            streamDataLength = Util.variableLengthInteger(streamDataLength_arr,1);
-            p=p+streamDataLengthLen;
-        }else{
-            streamDataLength = arr.length - p;
-        }
-        byte[] streamData = new byte[(int)streamDataLength];
-        for(int n=p;n<p+streamDataLength;n++){
-            streamData[n-p]=arr[n];
-        }
-        p=p+(int)streamDataLength;
-
-        return new DecodedFrame(new QuicStreamFrame(streamId,offset,finBit,streamData),p);
-    }
-
-    public static DecodedFrame quicCryptoFrameDecoder(byte[] arr,int index){
-        System.out.println("Frame Type  = Crypto Frame");
-        System.out.println("header byte = "+(int)arr[index]);
-        int p = index+1;
-        int offsetLen =  Util.variableLengthIntegerLength(arr[p]);
-        byte[] offset_arr = new byte[offsetLen];
-        for (int n=p;n<p+offsetLen;n++){
-            offset_arr[n-p]=arr[n];
-        }
-        long offset = Util.variableLengthInteger(offset_arr,1);
-        p=p+offsetLen;
-        System.out.println("offset "+offset);
-        //////////////////////////////////////////////
-        int tempCryptoDataLen = Util.variableLengthIntegerLength(arr[p]);
-        byte[] length_arr = new byte[tempCryptoDataLen];
-        for(int n=p;n<p+tempCryptoDataLen;n++){
-            length_arr[n-p]=arr[n];
-        }
-        long cryptoDataLength = Util.variableLengthInteger(length_arr,1);
-        p=p+tempCryptoDataLen;
-        System.out.println("crypto Data Length = "+cryptoDataLength);
-        ///////////////////////////////////
-        byte[] cryptoData = new byte[(int) cryptoDataLength];
-        for(int i=p;i<p+cryptoDataLength;i++){
-            cryptoData[i-p]=arr[i];
-            //System.out.println("cryptoData "+cryptoData[]);
-        }
-        p=p+(int)cryptoDataLength;
-
-
-        return new DecodedFrame(new QuicCryptoFrame(offset,cryptoData),p);
-
-    }
-
-    public static DecodedFrame quicConnectionCloseFrameDecoder(byte[] arr, int index) throws QuicException {
-        System.out.println("Frame Type  = Connection Close Frame");
-        System.out.println("header byte = "+(int)arr[index]);
-        /////////////
-        int p = index+1;
-        int errorCodeLen =  Util.variableLengthIntegerLength(arr[p]);
-        byte[] errorCode_arr = new byte[errorCodeLen];
-        for (int n=p;n<p+errorCodeLen;n++){
-            errorCode_arr[n-p]=arr[n];
-        }
-        long errorCode = Util.variableLengthInteger(errorCode_arr,1);
-        System.out.println("Error Code = "+ errorCode);
-        p=p+errorCodeLen;
-        ///////////////////////////////////////////////
-        int frameTypeLen =  Util.variableLengthIntegerLength(arr[p]);
-        byte[] frameType_arr = new byte[frameTypeLen];
-        for (int n=p;n<p+frameTypeLen;n++){
-            frameType_arr[n-p]=arr[n];
-        }
-        long frameType = Util.variableLengthInteger(frameType_arr,1);
-        System.out.println("Frame Type = "+ frameType);
-        p=p+frameTypeLen;
-
-        ///////////////////////////////////////////////
-        int tempReasonLength =  Util.variableLengthIntegerLength(arr[p]);
-        byte[] reasonLen_arr = new byte[tempReasonLength];
-        for (int n=p;n<p+tempReasonLength;n++){
-            reasonLen_arr[n-p]=arr[n];
-        }
-        long reasonLength = Util.variableLengthInteger(frameType_arr,1);
-        System.out.println("Reason Phrase length = "+reasonLength);
-        p=p+tempReasonLength;
-        ////////////////////////////////////////
-        byte[] reasonPhrase=new byte[0];
-        if(reasonLength>0){
-            reasonPhrase= new byte[(int) reasonLength];
-            for(int i=p;i<p+reasonLength;i++){
-                reasonPhrase[i-p]=arr[i];
-            }
-        }
-        p=p+(int)reasonLength;
-        String reasonP = null;
-        try{
-            reasonP = new String(reasonPhrase,"UTF-8");
-            System.out.println("Reason Phrase = "+reasonP);
-        }catch (Exception e){
-            throw new QuicException(0,0,"Connection Close exception");
-        }
-
-        return new DecodedFrame(new QuicConnectionCloseFrame(errorCode,frameType,reasonP),p);
-
-    }
-
-
 
 
 }
