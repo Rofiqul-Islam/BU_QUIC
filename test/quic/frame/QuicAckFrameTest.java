@@ -9,11 +9,24 @@ package quic.frame;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
+import quic.exception.QuicException;
+
 
 public class QuicAckFrameTest {
 
@@ -41,7 +54,7 @@ public class QuicAckFrameTest {
 
     // ACK Range Count
     Stream<Integer> getValidAckRangeCount() {
-        return Stream.of(0, 1, 31, 32, 1000);
+        return Stream.of(12, 1, 31, 32, 1000);
     }
 
     Stream<Integer> getInvalidAckRangeCount() {
@@ -72,23 +85,20 @@ public class QuicAckFrameTest {
                             + ", ACK Range Count = " + rangeCount
                             + ", First ACK Range = " + firstAckRange,
                     () -> {
-                        long[] gaps = new long[rangeCount];
-                        long[] acks = new long[rangeCount];
+                        
 
                         if (largestAck < firstAckRange) {
                             QuicAckFrame frame =
                                     new QuicAckFrame(largestAck, ackDelay,
                                             rangeCount, firstAckRange);
-                            for (int i = 0; i < rangeCount; i++) {
-                                frame.addGapAndAck(gaps[i], acks[i]);
-                            }
+                            
                             assertEquals(largestAck, frame.getLargestAck());
                             assertEquals(ackDelay, frame.getDelay());
                             assertEquals((long) rangeCount,
                                     frame.getRangeCount());
                             assertEquals(firstAckRange,
                                     frame.getFirstAckRange());
-                            assertEquals(rangeCount, frame.getGaps().size());
+                         
                         }
                     })))));
         }
@@ -99,6 +109,7 @@ public class QuicAckFrameTest {
                     dynamicTest("largest Acknowledgement: "
                             + largestAck, () -> {
                         assertThrows(IllegalArgumentException.class, () -> {
+                        	
                             QuicAckFrame frame = new QuicAckFrame(-1, 1, 1, 1);
                         });
                     }));
@@ -109,6 +120,7 @@ public class QuicAckFrameTest {
             return getInvalidAckDelay()
                     .map(ackDelay -> dynamicTest("ACK Delay: " + ackDelay, () -> {
                         assertThrows(IllegalArgumentException.class, () -> {
+                        	
                             QuicAckFrame frame = new QuicAckFrame(1, -1, 1, 1);
                         });
                     }));
@@ -120,6 +132,7 @@ public class QuicAckFrameTest {
                     -> dynamicTest("ACK Range Count" + ackRangeCount,
                     () -> {
                         assertThrows(IllegalArgumentException.class, () -> {
+                        	
                             QuicAckFrame frame = new QuicAckFrame(1, 1, -1, 1);
                         });
                     }));
@@ -130,9 +143,79 @@ public class QuicAckFrameTest {
             return getInvalidFirstAckRange().map(firstAckRange
                     -> dynamicTest("First ACK Range" + firstAckRange, () -> {
                 assertThrows(IllegalArgumentException.class, () -> {
+                	
                     QuicAckFrame frame = new QuicAckFrame(1, 1, 1, -1);
                 });
             }));
         }
+    }
+    
+    @Nested
+    public class EncodeTest {
+        @Test
+        public void encodeTest() throws IOException {
+        	
+        	long largestAck = 5L;
+            long delay = 14L;
+            int rangeCount = 0;
+            long firstAckRange = 6L;
+           
+            
+            QuicAckFrame frame =
+                    new QuicAckFrame(largestAck, delay, rangeCount, firstAckRange);
+
+            byte[] bytes = new byte[5];
+            bytes[0] = (byte) QuicAckFrame.FRAME_TYPE;
+            bytes[1] = (byte) largestAck;
+            bytes[2] = (byte) delay;
+            bytes[3] = (byte) rangeCount;
+            bytes[4] = (byte) firstAckRange;
+           
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            out.write(bytes);
+          
+            
+            assertArrayEquals(frame.encode(), out.toByteArray());
+        }
+
+    }
+
+    @Nested
+    public class DecodeTest {
+        @Test
+        public void decodeTest() throws IOException, QuicException {
+            
+            long largestAck = 5L;
+            long delay = 14L;
+            int rangeCount = 0;
+            long firstAckRange = 6L;
+            
+
+            byte[] bytes = new byte[5];
+            bytes[0] = (byte) QuicAckFrame.FRAME_TYPE;
+            bytes[1] = (byte) largestAck;
+            bytes[2] = (byte) delay;
+            bytes[3] = (byte) rangeCount;
+            bytes[4] = (byte) firstAckRange;
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            out.write(bytes);
+           
+
+            QuicFrame frame = QuicFrame.decode(out.toByteArray());
+            assertTrue(frame instanceof QuicAckFrame);
+
+            QuicAckFrame quicAckFrame =
+                    (QuicAckFrame) frame;
+            assertEquals(largestAck, quicAckFrame.getLargestAck());
+            assertEquals(delay, quicAckFrame.getDelay());
+            assertEquals(rangeCount, quicAckFrame.getRangeCount());
+            assertEquals(firstAckRange, quicAckFrame.getFirstAckRange());
+            assertEquals(rangeCount, quicAckFrame.getRangeCount());
+           
+            
+        }
+
     }
 }

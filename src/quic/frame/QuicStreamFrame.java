@@ -12,8 +12,8 @@ import java.util.Objects;
  * Represents a QUIC STREAM frame. The STREAM frame manages a data stream. It
  * can create a stream and carry data.
  *
- * @version 1.1
  * @author Md Rofiqul Islam
+ * @version 1.1
  */
 public class QuicStreamFrame extends QuicFrame {
     byte header;
@@ -37,17 +37,17 @@ public class QuicStreamFrame extends QuicFrame {
     /**
      * Values constructor for the STREAM frame.
      *
-     * @param streamId the ID of the stream
-     * @param offset the byte offset of the data within the stream
+     * @param streamId    the ID of the stream
+     * @param offset      the byte offset of the data within the stream
      * @param endOfStream flag marking the end of the stream
-     * @param data the frame's data
+     * @param data        the frame's data
      */
     public QuicStreamFrame(long streamId, long offset, boolean endOfStream, byte[] data) {
         this.setStreamId(streamId);
         this.setOffset(offset);
         this.setEndOfStream(endOfStream);
         this.setData(data);
-        this.setHeader((byte)8);
+        this.setHeader((byte) 8);
     }
 
     /**
@@ -62,6 +62,7 @@ public class QuicStreamFrame extends QuicFrame {
 
     /**
      * Getter of header byte
+     *
      * @return
      */
     public byte getHeader() {
@@ -70,18 +71,20 @@ public class QuicStreamFrame extends QuicFrame {
 
     /**
      * Setter of header byte
+     *
      * @param header
      */
     public void setHeader(byte header) {
         this.header = header;
-        if(this.getOffset()>0){   // offset bit is set when offset is greater than 0
+        if (this.getOffset() > 0) {   // offset bit is set when offset is greater than 0
             this.header = (byte) (this.header | 4);
         }
+        if (this.getData().length > 0) {
+            this.header = (byte) (this.header | 2);  // setting len bit when data length is greater than 0
+        }
 
-        this.header = (byte) (this.header | 2);    // always setting len bit
-
-        if(this.isEndOfStream()){    // fin bit is set when it is the last frame of data
-            this.header = (byte)(this.header | 1);
+        if (this.isEndOfStream()) {    // fin bit is set when it is the last frame of data
+            this.header = (byte) (this.header | 1);
         }
     }
 
@@ -91,9 +94,9 @@ public class QuicStreamFrame extends QuicFrame {
      * @param streamId the ID to set
      */
     public void setStreamId(long streamId) {
-        if(streamId>=0 && streamId<(long)Math.pow(2,62)) {
+        if (streamId >= 0 && streamId < (long) Math.pow(2, 62)) {
             this.streamId = streamId;
-        }else{
+        } else {
             throw new IllegalArgumentException();
         }
 
@@ -114,9 +117,9 @@ public class QuicStreamFrame extends QuicFrame {
      * @param offset the offset to set
      */
     public void setOffset(long offset) {
-        if(offset>=0 && offset<(long)Math.pow(2,62)) {
+        if (offset >= 0 && offset < (long) Math.pow(2, 62)) {
             this.offset = offset;
-        }else{
+        } else {
             throw new IllegalArgumentException();
         }
 
@@ -159,20 +162,21 @@ public class QuicStreamFrame extends QuicFrame {
     }
 
 
-
     @Override
     public byte[] encode() throws IOException {
         ByteArrayOutputStream encoding = new ByteArrayOutputStream();
         encoding.write(this.getHeader()); // appending header byte
         encoding.write(Util.generateVariableLengthInteger(this.getStreamId())); // appending Stream id as a variable length integer
-        if(this.getOffset()>0) {
+        if (this.getOffset() > 0) {
             encoding.write(Util.generateVariableLengthInteger(this.getOffset())); // appending Offset as a variable length integer
         }
-        encoding.write(Util.generateVariableLengthInteger((long)this.getData().length));  // appending length as a variable length integer
+        if ((header & 2) == 2) {
+            encoding.write(Util.generateVariableLengthInteger((long) this.getData().length));  // appending length as a variable length integer
+        }
         encoding.write(this.getData());
 
 
-        byte [] data = encoding.toByteArray();
+        byte[] data = encoding.toByteArray();
         return data;
     }
 
@@ -180,7 +184,7 @@ public class QuicStreamFrame extends QuicFrame {
     public String toString() {
         return "QuicStreamFrame{" +
                 "streamId=" + this.getStreamId() +
-                ", offset=" +this.getOffset()+
+                ", offset=" + this.getOffset() +
                 ", endOfStream=" + this.isEndOfStream() +
                 "}";
     }

@@ -5,27 +5,31 @@ import quic.exception.QuicException;
 import quic.util.Util;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 
 
 /**
  * Represents a QUIC frame.
- * @version 1.1
+ *
  * @author Md Rofiqul Islam
+ * @version 1.1
  */
 
 public abstract class QuicFrame {
-
+    /**
+     * payload index variable
+     */
     static int payloadPostionIndicator;
-    static int flag =0;
+    /**
+     * indicator for multiple frame in payload
+     */
+    static int flag = 0;
 
-    static QuicFrame intFrame;
-
+    /**
+     * Quic frame constructor
+     */
     public QuicFrame() {
-        if(flag==0){
-            payloadPostionIndicator =0;
+        if (flag == 0) {
+            payloadPostionIndicator = 0;          // for multiple frame in a same packet
         }
 
     }
@@ -42,7 +46,6 @@ public abstract class QuicFrame {
      * Encodes the frame into bytes to be sent over the network
      *
      * @return the encoded frame
-     *
      */
 
 
@@ -64,34 +67,25 @@ public abstract class QuicFrame {
     public static QuicFrame decode(byte[] arr) throws QuicException {
 
         byte headerByte = arr[payloadPostionIndicator];       // payloadpositionIndicator indicates the next byte should be read from payload
-        if(headerByte == 2 || headerByte == 3){       //ACK frame = type 2 & 3
+        if (headerByte == 2 || headerByte == 3) {       //ACK frame = type 2 & 3
             return quicAckFrameDecoder(arr);
-        }
-        else if(headerByte>=8 && headerByte<=15){          //Stream frame = type 8-15
-            return quicStreamFrameDecoder(arr,headerByte);
-        }
-        else if(headerByte == 28 || headerByte == 29){
+        } else if (headerByte >= 8 && headerByte <= 15) {          //Stream frame = type 8-15
+            return quicStreamFrameDecoder(arr, headerByte);
+        } else if (headerByte == 28 || headerByte == 29) {
             return quicConnectionCloseFrameDecoder(arr);    // connection Close frame, type 28 and 29
-        }
-        else if(headerByte == 0){
-            payloadPostionIndicator=arr.length;      // padding frame , type =0
-            return new QuicPaddingFrame();
-        }
-        else if(headerByte == 17){
-            return quicMaxStreamDataFrameDecoder(arr);  // Max Stream Data frame, type 17
-        }
-        else{
-            throw new QuicException(7,0,"Unknown headerByte of frame");
+        } else {
+            throw new QuicException(7, 0, "Unknown headerByte of frame");
         }
     }
 
     /**
-     *  Method for decoding the byte array which contains Quic Ack frame
-     * @param arr     input array
-     * @return       Quic Ack frame
+     * Method for decoding the byte array which contains Quic Ack frame
+     *
+     * @param arr input array
+     * @return Quic Ack frame
      * @throws QuicException
      */
-    public static QuicFrame quicAckFrameDecoder(byte[] arr) throws QuicException{
+    public static QuicFrame quicAckFrameDecoder(byte[] arr) throws QuicException {
         try {
             int pointer = payloadPostionIndicator + 1;
             // ---------------Largest Acknowledgement---------//
@@ -128,7 +122,7 @@ public abstract class QuicFrame {
             long firstAckRange = Util.variableLengthInteger(firstAckRange_arr, 1);  // calculating the First AckRange
             pointer = pointer + firstAckRangeLen;
             //--------- ACK Ranges-------//
-            List<Long> gapList = new ArrayList<>();     // list of GAP
+            /*List<Long> gapList = new ArrayList<>();     // list of GAP
             List<Long> ackList = new ArrayList<>();     // list of ACK
             for (long i = 0; i < ackRangeCount; i++) {
                 int gapLen = Util.variableLengthIntegerLength(arr[pointer]);    // calculating gap length
@@ -149,94 +143,91 @@ public abstract class QuicFrame {
                 ackList.add(ackRange);
                 pointer = pointer + ackRangeLen;
 
-            }
+            }*/
 
             setPayloadPostionIndicator(pointer); // updating the next posting of payload to be decoded
-            Iterator<Long> gapIterator = gapList.iterator();
-            Iterator<Long> ackIterator = ackList.iterator();
+            //Iterator<Long> gapIterator = gapList.iterator();
+            //Iterator<Long> ackIterator = ackList.iterator();
             QuicAckFrame quicAckFrame = new QuicAckFrame(largestAck, ackDelay, ackRangeCount, firstAckRange); // generating ACK frame
-            for (int i = 0; i < ackRangeCount; i++) {
-                quicAckFrame.addGapAndAck(gapIterator.next(), ackIterator.next());
-            }
             return quicAckFrame;
-        }catch (Exception e){
-            throw new QuicException(10,2,"Ack frame decoding error");
+        } catch (Exception e) {
+            throw new QuicException(10, 2, "Ack frame decoding error");
         }
     }
 
     /**
-     *  Method for decoding Quic Stream Frame
-     * @param arr input array containing Stream frame
-     * @param headerByte  header of the frame
+     * Method for decoding Quic Stream Frame
+     *
+     * @param arr        input array containing Stream frame
+     * @param headerByte header of the frame
      * @return Quic stream frame
      * @throws QuicException
      */
-    public static QuicFrame quicStreamFrameDecoder(byte[] arr, byte headerByte)throws QuicException {
-        boolean offbit=false;
+    public static QuicFrame quicStreamFrameDecoder(byte[] arr, byte headerByte) throws QuicException {
+        boolean offbit = false;
         boolean lenBit = false;
         boolean finBit = false;
 
         // calcualting offset-bit, length-bit and fin-bit from header byte
-        if((headerByte & 4)>0){         // 0x4 positon of header byte indicates offset bit
+        if ((headerByte & 4) > 0) {         // 0x4 positon of header byte indicates offset bit
             offbit = true;                 //offset bit is set when the offset is more than 0
         }
-        if((headerByte & 2)>0){        // 0x2 positon of header byte indicates the length bit
+        if ((headerByte & 2) > 0) {        // 0x2 positon of header byte indicates the length bit
             lenBit = true;              // length bit indicates the length field is present in frame. if it is not set then the
         }                               // length is not set in frame, that means the remaining part is all payload.
 
-        if((headerByte & 1)>0){        // 0x1 position of header byte indicates the FIN bit. that means it is the last frame of data
+        if ((headerByte & 1) > 0) {        // 0x1 position of header byte indicates the FIN bit. that means it is the last frame of data
             finBit = true;
         }
-        int p = payloadPostionIndicator+1;
+        int p = payloadPostionIndicator + 1;
         //---------------Stream ID ---------------//
         int streamIdLen = Util.variableLengthIntegerLength(arr[p]);  // calculating the length of variable length integer
         byte[] streamId_arr = new byte[streamIdLen];
-        for(int n = p;n<p+streamIdLen;n++){
-            streamId_arr[n-p] = arr[n];
+        for (int n = p; n < p + streamIdLen; n++) {
+            streamId_arr[n - p] = arr[n];
         }
-        long streamId = Util.variableLengthInteger(streamId_arr,1);     // calcualting Stream id by variable length integer parsing
-        p=p+streamIdLen;
+        long streamId = Util.variableLengthInteger(streamId_arr, 1);     // calcualting Stream id by variable length integer parsing
+        p = p + streamIdLen;
         //-----------------Offset----------------//
-        long offset=0;
-        if(offbit){                // offset is only present in payload when the offset bit of header is set
+        long offset = 0;
+        if (offbit) {                // offset is only present in payload when the offset bit of header is set
             int offsetLen = Util.variableLengthIntegerLength(arr[p]);
             byte[] offset_arr = new byte[offsetLen];
-            for(int n = p;n<p+offsetLen;n++){
-                offset_arr[n-p] = arr[n];
+            for (int n = p; n < p + offsetLen; n++) {
+                offset_arr[n - p] = arr[n];
             }
-            offset = Util.variableLengthInteger(offset_arr,1);          // calcualting the offset by variable length integer parsing
-            p=p+offsetLen;
+            offset = Util.variableLengthInteger(offset_arr, 1);          // calcualting the offset by variable length integer parsing
+            p = p + offsetLen;
         }
         //------------- length --------------//
         long streamDataLength = 0;
-        if(lenBit){           // length field in only present in Stream frame when len bit of header is set
+        if (lenBit) {           // length field in only present in Stream frame when len bit of header is set
             int streamDataLengthLen = Util.variableLengthIntegerLength(arr[p]);
             byte[] streamDataLength_arr = new byte[streamDataLengthLen];
-            for(int n = p;n<p+streamDataLengthLen;n++){
-                streamDataLength_arr[n-p] = arr[n];
+            for (int n = p; n < p + streamDataLengthLen; n++) {
+                streamDataLength_arr[n - p] = arr[n];
             }
-            streamDataLength = Util.variableLengthInteger(streamDataLength_arr,1);   // calculating length by variable length integer parsing
-            p=p+streamDataLengthLen;
-        }else{
-            streamDataLength = arr.length - p;  // if len-bit is not set then the remaing part of payload is the data of stream frame.
+            streamDataLength = Util.variableLengthInteger(streamDataLength_arr, 1);   // calculating length by variable length integer parsing
+            p = p + streamDataLengthLen;
         }
-        byte[] streamData = new byte[(int)streamDataLength];
-        for(int n=p;n<p+streamDataLength;n++){
-            streamData[n-p]=arr[n];            // generating the data of stream frame
+        byte[] streamData = new byte[(int) streamDataLength];
+        for (int n = p; n < p + streamDataLength; n++) {
+            streamData[n - p] = arr[n];            // generating the data of stream frame
         }
-        p=p+(int)streamDataLength;
-        payloadPostionIndicator=p;
-        return new QuicStreamFrame(streamId,offset,finBit,streamData);
+        p = p + (int) streamDataLength;
+        payloadPostionIndicator = p;
+        return new QuicStreamFrame(streamId, offset, finBit, streamData);
     }
 
 
     /**
-     *  Method for decoding the Quic Connection close frame
+     * Method for decoding the Quic Connection close frame
+     *
      * @param arr input byte array containg connection close frame
-     * @return  quic connection close frame
+     * @return quic connection close frame
      * @throws QuicException
      */
-    public static QuicFrame quicConnectionCloseFrameDecoder(byte[] arr) throws QuicException{
+    public static QuicFrame quicConnectionCloseFrameDecoder(byte[] arr) throws QuicException {
         try {
             int pointer = payloadPostionIndicator + 1;
             //----------- Error Code--------//
@@ -278,54 +269,11 @@ public abstract class QuicFrame {
             payloadPostionIndicator = pointer;
 
             return new QuicConnectionCloseFrame(errorCode, frameType, reasonP);
-        }catch (Exception e){
-            throw new QuicException(10,28,"Close connection decode error");
+        } catch (Exception e) {
+            throw new QuicException(10, 28, "Close connection decode error");
         }
 
     }
-
-    /**
-     * Method for decoding the Quic Max Stream Data frame
-     * @param arr input byte array containing Max Stream frame
-     * @return  maxStreamFrame
-     * @throws QuicException
-     */
-    public static QuicFrame quicMaxStreamDataFrameDecoder(byte[] arr) throws QuicException {
-        try {
-            int pointer = payloadPostionIndicator + 1;
-            //---------------- Stream ID-------//
-            int streamIdLen = Util.variableLengthIntegerLength(arr[pointer]);
-            byte[] streamId_arr = new byte[streamIdLen];
-            for (int n = pointer; n < pointer + streamIdLen; n++) {
-                streamId_arr[n - pointer] = arr[n];
-            }
-            long streamId = Util.variableLengthInteger(streamId_arr, 1); // generating the long stream id from variable length integer
-            pointer = pointer + streamIdLen;
-            //------------------ Max Stream Data--------------//
-            int maxStreamDataLen = Util.variableLengthIntegerLength(arr[pointer]);
-            byte[] maxStreamData_arr = new byte[maxStreamDataLen];
-            for (int n = pointer; n < pointer + maxStreamDataLen; n++) {
-                maxStreamData_arr[n - pointer] = arr[n];
-            }
-            long maxStreamData = Util.variableLengthInteger(maxStreamData_arr, 1);      // Generating maximum stream data size
-            System.out.println("Maximum Stream Data = " + maxStreamData);
-            pointer = pointer + maxStreamDataLen;
-            payloadPostionIndicator = pointer;
-            return new QuicMaxStreamDataFrame(streamId,maxStreamData);
-        }catch (Exception e){
-            throw new QuicException(10,17,"Max stream data frame decoding error");
-        }
-
-
-
-    }
-
-
-
-
-
-
-
 
 
 }

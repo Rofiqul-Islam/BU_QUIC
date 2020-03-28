@@ -13,8 +13,8 @@ import java.util.*;
  * Represents IETF-QUIC Packet
  * Chapter 12.3
  *
- * @version 1.2
  * @author Md Rofiqul Islam
+ * @version 1.2
  */
 public abstract class QuicPacket {
 
@@ -46,10 +46,10 @@ public abstract class QuicPacket {
         this.setDcID(dcID);
         this.setPacketNumber(packetNumber);
         this.setDcIdSize(dcID.length);
-        if(frames==null){
+        if (frames == null) {
             throw new NullPointerException();
         }
-        if(frames!=null && frames.size()==0){
+        if (frames != null && frames.size() == 0) {
             throw new IllegalArgumentException();
         }
         if (frames != null) {
@@ -87,7 +87,7 @@ public abstract class QuicPacket {
      */
 
     public static QuicPacket decode(byte[] arr, int dcIdSize) throws QuicException {
-        return Util.quicShortHeaderDecoder(arr,dcIdSize);
+        return Util.quicShortHeaderDecoder(arr, dcIdSize);
     }
 
 
@@ -109,10 +109,10 @@ public abstract class QuicPacket {
             if (headerByte < 64) {          // header byte cannot be less than 64
                 throw new QuicException(10, 0, "Invalid header byte");
             }
-            if((headerByte & 12) != 0){           // assuming the reserved bit will be always 0
+            if ((headerByte & 12) != 0) {           // assuming the reserved bit will be always 0
                 throw new QuicException(10, 0, "Invalid header byte");
             }
-            if((headerByte & 64) ==0){         // 0x40 position of all packet should be set
+            if ((headerByte & 64) == 0) {         // 0x40 position of all packet should be set
                 throw new QuicException(10, 0, "Invalid header byte");
             }
             // generating a  header array from header byte
@@ -129,17 +129,17 @@ public abstract class QuicPacket {
         }
         if (headerArry[0] == 0) {   // if the first bit of header is 0 , that means it is short header packet
             //shortheader
-            return decode(arr,getDcIdSize());
+            return decode(arr, getDcIdSize());
         } else if (headerArry[0] == 1) {                          //first bit of header is 1, Long header packet
             if (headerArry[2] == 0 && headerArry[3] == 0) {
                 //intialpacket , 3rd and 4th bit are 0
-                return Util.quicIntialPacketDecoder( arr, headerByte);
-            }  else {
+                return Util.quicIntialPacketDecoder(arr, headerByte);
+            } else {
                 throw new QuicException(0, 0, "header byte invalid");
             }
 
         }
-        throw new QuicException(0,0,"invalid data");
+        throw new QuicException(0, 0, "invalid data");
     }
 
     /**
@@ -182,7 +182,7 @@ public abstract class QuicPacket {
      * @param packetNumber number of the packet
      */
     public void setPacketNumber(long packetNumber) {
-        if (packetNumber >= 0L && packetNumber < Math.pow(2,32)) {
+        if (packetNumber >= 0L && packetNumber < Math.pow(2, 32)) {
             this.packetNumber = packetNumber;
         } else {
             throw new IllegalArgumentException();
@@ -204,7 +204,8 @@ public abstract class QuicPacket {
         frames.removeAll(temp);
         return temp;
     }
-    public Set<QuicFrame> showFrames(){
+
+    public Set<QuicFrame> showFrames() {
         return frames;
     }
 
@@ -217,7 +218,6 @@ public abstract class QuicPacket {
         this.frames.add(frame);
 
     }
-
 
 
     @Override
