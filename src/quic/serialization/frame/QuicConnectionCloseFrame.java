@@ -1,6 +1,6 @@
-package quic.frame;
+package quic.serialization.frame;
 
-import quic.util.Util;
+import quic.serialization.util.Util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

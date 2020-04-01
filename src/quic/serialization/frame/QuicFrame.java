@@ -1,8 +1,8 @@
-package quic.frame;
+package quic.serialization.frame;
 
 
-import quic.exception.QuicException;
-import quic.util.Util;
+import quic.serialization.exception.QuicException;
+import quic.serialization.util.Util;
 
 import java.io.*;
 
@@ -74,6 +74,7 @@ public abstract class QuicFrame {
         } else if (headerByte == 28 || headerByte == 29) {
             return quicConnectionCloseFrameDecoder(arr);    // connection Close frame, type 28 and 29
         } else {
+            setPayloadPostionIndicator(arr.length);
             throw new QuicException(7, 0, "Unknown headerByte of frame");
         }
     }

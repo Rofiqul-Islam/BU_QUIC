@@ -1,6 +1,8 @@
 package quic.frame;
 
 import org.junit.jupiter.api.*;
+import quic.serialization.frame.QuicFrame;
+import quic.serialization.frame.QuicStreamFrame;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.Charset;

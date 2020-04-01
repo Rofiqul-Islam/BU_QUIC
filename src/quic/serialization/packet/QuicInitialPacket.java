@@ -1,8 +1,8 @@
-package quic.packet;
+package quic.serialization.packet;
 
-import quic.exception.QuicException;
-import quic.frame.QuicFrame;
-import quic.util.Util;
+import quic.serialization.exception.QuicException;
+import quic.serialization.frame.*;
+import quic.serialization.util.Util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -117,7 +117,7 @@ public class QuicInitialPacket extends QuicLongHeaderPacket {
         encoding.write(Util.generateVariableLengthInteger(packetNumberLength + frameSize)); // length  = payload length+ packet numebr length
         encoding.write(Util.hexStringToByteArray((Long.toHexString(this.getPacketNumber())), packetNumberLength)); // appending packet number
         encoding.write(temp.toByteArray()); // appending the payload
-
+        System.out.println(encoding.toByteArray().length);
         return encoding.toByteArray();
     }
 

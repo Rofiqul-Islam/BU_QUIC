@@ -1,8 +1,8 @@
-package quic.util;
+package quic.serialization.util;
 
-import quic.exception.QuicException;
-import quic.frame.*;
-import quic.packet.*;
+import quic.serialization.exception.QuicException;
+import quic.serialization.frame.*;
+import quic.serialization.packet.*;
 import java.util.HashSet;
 
 import java.util.Set;
@@ -198,7 +198,7 @@ public class Util {
                 version_arr[n - pointer] = arr[n];
             }
             long version = Util.variableLengthInteger(version_arr, 0); // generating long version from byte array
-            System.out.println("version = " + version);
+            //System.out.println("version = " + version);
             pointer = n;
             //-------------Destination ID -----------------//
             int dcIdLenD = (int) arr[pointer]; //destination id length
@@ -254,7 +254,7 @@ public class Util {
             int k = pointer;
             for (; k < pointer + (length - (packetNoLen)); k++) {
                 payload[k - pointer] = arr[k];           // generating the payload array
-                System.out.print(k + " ");
+                //System.out.print(k + " ");
             }
             pointer = k;
             QuicPacket initialPacket = new QuicInitialPacket(dcIdD, packetNum, version, scIdD, frameDecode(payload)); // creating new initial packet
@@ -278,7 +278,10 @@ public class Util {
         QuicFrame.setPayloadPostionIndicator(0);
         QuicFrame.setFlag(1);
         while (QuicFrame.getPayloadPostionIndicator() < payload.length) {
-            temp.add(QuicFrame.decode(payload));
+            try {
+                temp.add(QuicFrame.decode(payload));
+            }catch (QuicException e){
+            }
         }
         QuicFrame.setFlag(0);
         return temp;
@@ -320,7 +323,7 @@ public class Util {
 
             for (; k < arr.length; k++) {
                 payload[k - pointer] = arr[k];         // generating payload
-                System.out.print(k + " ");
+                //System.out.print(k + " ");
             }
             pointer = k;
             QuicPacket shortHeaderPacket = new QuicShortHeaderPacket(dcIdD, packetNum, frameDecode(payload));  // creating Quic short header packet

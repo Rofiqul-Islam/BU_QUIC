@@ -25,7 +25,9 @@ import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import quic.exception.QuicException;
+import quic.serialization.exception.QuicException;
+import quic.serialization.frame.QuicAckFrame;
+import quic.serialization.frame.QuicFrame;
 
 
 public class QuicAckFrameTest {

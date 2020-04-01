@@ -1,8 +1,9 @@
 package quic.packet;
 
 import org.junit.jupiter.api.*;
-import quic.exception.QuicException;
-import quic.frame.*;
+import quic.serialization.exception.QuicException;
+import quic.serialization.frame.*;
+import quic.serialization.packet.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

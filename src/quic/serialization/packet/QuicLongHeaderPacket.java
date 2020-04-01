@@ -1,6 +1,6 @@
-package quic.packet;
+package quic.serialization.packet;
 
-import quic.frame.QuicFrame;
+import quic.serialization.frame.QuicFrame;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -55,7 +55,7 @@ public abstract class QuicLongHeaderPacket extends QuicPacket {
      * @param version IETF-QUIC version
      */
     public void setVersion(long version) {
-        if (version >= 0 && version <= 4294967295L) {
+        if (version >= 0L && version <= 4294967295L) {
             this.version = version;
         } else {
             throw new IllegalArgumentException();

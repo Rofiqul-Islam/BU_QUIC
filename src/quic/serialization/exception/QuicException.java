@@ -1,4 +1,4 @@
-package quic.exception;
+package quic.serialization.exception;
 
 import java.util.Objects;
 

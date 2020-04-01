@@ -1,6 +1,7 @@
 package quic.exception;
 
 import org.junit.jupiter.api.*;
+import quic.serialization.exception.QuicException;
 
 import java.util.stream.Stream;
 

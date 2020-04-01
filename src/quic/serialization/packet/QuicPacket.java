@@ -1,8 +1,9 @@
-package quic.packet;
+package quic.serialization.packet;
 
-import quic.exception.QuicException;
-import quic.frame.QuicFrame;
-import quic.util.Util;
+import quic.serialization.exception.QuicException;
+import quic.serialization.frame.*;
+import quic.serialization.util.Util;
+import quic.serialization.packet.*;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -72,7 +73,7 @@ public abstract class QuicPacket {
      *
      * @return byte[]
      */
-    public byte[] encode() throws QuicException, IOException {
+    public byte[] encode() throws IOException {
         return new byte[3];
     }
 

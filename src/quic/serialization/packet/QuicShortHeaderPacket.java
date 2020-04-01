@@ -1,9 +1,9 @@
-package quic.packet;
+package quic.serialization.packet;
 
 
-import quic.exception.QuicException;
-import quic.frame.QuicFrame;
-import quic.util.Util;
+import quic.serialization.exception.QuicException;
+import quic.serialization.frame.QuicFrame;
+import quic.serialization.util.Util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

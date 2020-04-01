@@ -3,7 +3,9 @@ package quic.frame;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import quic.exception.QuicException;
+import quic.serialization.exception.QuicException;
+import quic.serialization.frame.QuicConnectionCloseFrame;
+import quic.serialization.frame.QuicFrame;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
