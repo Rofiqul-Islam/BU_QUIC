@@ -8,15 +8,22 @@ public class QuicPacketTest {
     public static final Charset CHARSET = StandardCharsets.UTF_8;
 
     public static Stream<byte[]> getValidConnectionIds() {
-        return Stream.of(new byte[0], "a".getBytes(CHARSET), "abc".getBytes(CHARSET), "#$%^&*".getBytes(CHARSET), "0".getBytes(CHARSET), "287340932".getBytes(CHARSET), "1234567890".getBytes(CHARSET));
+        return Stream.of(new byte[0], "a".getBytes(CHARSET),
+                "abc".getBytes(CHARSET), "#$%^&*".getBytes(CHARSET),
+                "0".getBytes(CHARSET), "287340932".getBytes(CHARSET),
+                "1234567890".getBytes(CHARSET));
     }
 
     public static Stream<byte[]> getInvalidConnectionIds() {
-        return Stream.of(new byte[21], "asdfgasdfghjklhjklaslkdjf".getBytes(CHARSET), "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes(CHARSET), "DYFUGHIJH34567890DTYUIKslerj".getBytes(CHARSET));
+        return Stream.of(new byte[21],
+                "asdfgasdfghjklhjklaslkdjf".getBytes(CHARSET),
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes(CHARSET),
+                "DYFUGHIJH34567890DTYUIKslerj".getBytes(CHARSET));
     }
 
     public static Stream<Long> getValidPacketNumbers() {
-        return Stream.of(0L, 1L, 27L, (long) Integer.MAX_VALUE, (long) Math.pow(2, 32) - 1);
+        return Stream.of(0L, 1L, 27L, (long) Integer.MAX_VALUE,
+                (long) Math.pow(2, 32) - 1);
     }
 
     public static Stream<Long> getInvalidPacketNumbers() {
